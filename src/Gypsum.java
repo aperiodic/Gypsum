@@ -5,13 +5,11 @@
 //  Created by DLP on 6/2/09.
 //  Copyright (c) 2009 __MyCompanyName__. All rights reserved.
 //
-//	For information on setting Java configuration information, including 
-//	setting Java properties, refer to the documentation at
-//		http://developer.apple.com/techpubs/java/java.html
 //
 
 import java.util.Locale;
 import java.util.ResourceBundle;
+import java.util.Properties;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -24,9 +22,11 @@ import com.apple.eawt.*;
 public class Gypsum extends JFrame {
 
 	private Font font = new Font("serif", Font.ITALIC+Font.BOLD, 36);
-	protected ResourceBundle resbundle;
+	protected ResourceBundle strings;
+	protected Properties config;
 	protected AboutBox aboutBox;
 	protected PrefPane prefs;
+	protected Configuration configurate;
 	private Application fApplication = Application.getApplication();
 	protected Action newAction, openAction, closeAction, saveAction, saveAsAction,
 					 undoAction, cutAction, copyAction, pasteAction, clearAction, selectAllAction;
@@ -39,8 +39,8 @@ public class Gypsum extends JFrame {
 		// The ResourceBundle below contains all of the strings used in this
 		// application.  ResourceBundles are useful for localizing applications.
 		// New localities can be added by adding additional properties files.
-		resbundle = ResourceBundle.getBundle ("strings", Locale.getDefault());
-		setTitle(resbundle.getString("frameConstructor"));
+		strings = ResourceBundle.getBundle ("strings", Locale.getDefault());
+		setTitle(strings.getString("frameConstructor"));
 		this.getContentPane().setLayout(null);
 		
 		createActions();
@@ -72,8 +72,16 @@ public class Gypsum extends JFrame {
 			}
 		});
 		
-		setSize(310, 150);
-		setVisible(true);
+		if(!loadConfiguration()) {
+			
+		}
+		
+		/*if (!configured) {
+			configure();
+		} else {
+			setSize(310, 150);
+			setVisible(true);
+		}*/
 	}
 
 	public void about(ApplicationEvent e) {
@@ -94,32 +102,32 @@ public class Gypsum extends JFrame {
 		int shortcutKeyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
 
 		//Create actions that can be used by menus, buttons, toolbars, etc.
-		newAction = new newActionClass( resbundle.getString("newItem"),
+		newAction = new newActionClass( strings.getString("newItem"),
 											KeyStroke.getKeyStroke(KeyEvent.VK_N, shortcutKeyMask) );
-		openAction = new openActionClass( resbundle.getString("openItem"),
+		openAction = new openActionClass( strings.getString("openItem"),
 											KeyStroke.getKeyStroke(KeyEvent.VK_O, shortcutKeyMask) );
-		closeAction = new closeActionClass( resbundle.getString("closeItem"),
+		closeAction = new closeActionClass( strings.getString("closeItem"),
 											KeyStroke.getKeyStroke(KeyEvent.VK_W, shortcutKeyMask) );
-		saveAction = new saveActionClass( resbundle.getString("saveItem"),
+		saveAction = new saveActionClass( strings.getString("saveItem"),
 											KeyStroke.getKeyStroke(KeyEvent.VK_S, shortcutKeyMask) );
-		saveAsAction = new saveAsActionClass( resbundle.getString("saveAsItem") );
+		saveAsAction = new saveAsActionClass( strings.getString("saveAsItem") );
 
-		undoAction = new undoActionClass( resbundle.getString("undoItem"),
+		undoAction = new undoActionClass( strings.getString("undoItem"),
 											KeyStroke.getKeyStroke(KeyEvent.VK_Z, shortcutKeyMask) );
-		cutAction = new cutActionClass( resbundle.getString("cutItem"),
+		cutAction = new cutActionClass( strings.getString("cutItem"),
 											KeyStroke.getKeyStroke(KeyEvent.VK_X, shortcutKeyMask) );
-		copyAction = new copyActionClass( resbundle.getString("copyItem"),
+		copyAction = new copyActionClass( strings.getString("copyItem"),
 											KeyStroke.getKeyStroke(KeyEvent.VK_C, shortcutKeyMask) );
-		pasteAction = new pasteActionClass( resbundle.getString("pasteItem"),
+		pasteAction = new pasteActionClass( strings.getString("pasteItem"),
 											KeyStroke.getKeyStroke(KeyEvent.VK_V, shortcutKeyMask) );
-		clearAction = new clearActionClass( resbundle.getString("clearItem") );
-		selectAllAction = new selectAllActionClass( resbundle.getString("selectAllItem"),
+		clearAction = new clearActionClass( strings.getString("clearItem") );
+		selectAllAction = new selectAllActionClass( strings.getString("selectAllItem"),
 											KeyStroke.getKeyStroke(KeyEvent.VK_A, shortcutKeyMask) );
 	}
 	
 	public void addMenus() {
 
-		fileMenu = new JMenu(resbundle.getString("fileMenu"));
+		fileMenu = new JMenu(strings.getString("fileMenu"));
 		fileMenu.add(new JMenuItem(newAction));
 		fileMenu.add(new JMenuItem(openAction));
 		fileMenu.add(new JMenuItem(closeAction));
@@ -127,7 +135,7 @@ public class Gypsum extends JFrame {
 		fileMenu.add(new JMenuItem(saveAsAction));
 		mainMenuBar.add(fileMenu);
 
-		editMenu = new JMenu(resbundle.getString("editMenu"));
+		editMenu = new JMenu(strings.getString("editMenu"));
 		editMenu.add(new JMenuItem(undoAction));
 		editMenu.addSeparator();
 		editMenu.add(new JMenuItem(cutAction));
@@ -140,12 +148,48 @@ public class Gypsum extends JFrame {
 
 		setJMenuBar (mainMenuBar);
 	}
+	
+	public boolean loadConfiguration() {
+		try {
+			config = new Properties();
+			java.io.FileInputStream configFile = new java.io.FileInputStream("Gypsum.config");
+			
+			config.load(configFile);
+			String configured = config.getProperty("configured");
+			
+			if (configured.equals("yes")) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+		catch (java.io.FileNotFoundException fnf) {
+			try {
+				java.io.FileOutputStream configFile = new java.io.FileOutputStream("Gypsum.config", true);
+				config.setProperty("configured", "no");
+				config.store(configFile, "");
+				configFile.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+			return false;
+		}
+		
+	}
+	
+	public void configure() {
+		if (configurate == null) {
+			configurate = new Configuration();
+		}
+		configurate.startConfiguration();
+	}
 
 	public void paint(Graphics g) {
 		super.paint(g);
 		g.setColor(Color.blue);
 		g.setFont (font);
-		g.drawString(resbundle.getString("message"), 40, 80);
+		g.drawString(strings.getString("message"), 40, 80);
 	}
 	
 	public class newActionClass extends AbstractAction {
