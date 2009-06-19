@@ -73,7 +73,7 @@ public class Gypsum extends JFrame {
 		});
 		
 		if(!loadConfiguration()) {
-			
+			configure();
 		}
 		
 		/*if (!configured) {
@@ -152,9 +152,13 @@ public class Gypsum extends JFrame {
 	public boolean loadConfiguration() {
 		try {
 			config = new Properties();
-			java.io.FileInputStream configFile = new java.io.FileInputStream("Gypsum.config");
+			java.io.FileInputStream configFile = new java.io.FileInputStream("Gypsum.app/Contents/Resources/Gypsum.config");
 			
-			config.load(configFile);
+			try {
+				config.load(configFile);
+			} catch (java.io.IOException ioe) {
+				return false;
+			}
 			String configured = config.getProperty("configured");
 			
 			if (configured.equals("yes")) {
@@ -165,7 +169,7 @@ public class Gypsum extends JFrame {
 		}
 		catch (java.io.FileNotFoundException fnf) {
 			try {
-				java.io.FileOutputStream configFile = new java.io.FileOutputStream("Gypsum.config", true);
+				java.io.FileOutputStream configFile = new java.io.FileOutputStream("Gypsum.app/Contents/Resources/Gypsum.config", true);
 				config.setProperty("configured", "no");
 				config.store(configFile, "");
 				configFile.close();
