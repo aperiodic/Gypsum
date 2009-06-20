@@ -20,6 +20,7 @@ import javax.swing.*;
 public class Configuration extends JFrame implements ActionListener {
 	protected JButton cancel, previous, next;
 	protected JPanel buttonPane, deck;
+	protected JRadioButton extended, mirrored;
 	protected JPanel[] configCards;
 	protected static int configWidth = 500;
 	protected static int configHeight = 400;
@@ -36,9 +37,6 @@ public class Configuration extends JFrame implements ActionListener {
 		strings = ResourceBundle.getBundle("strings", Locale.getDefault());
 		setTitle(strings.getString("configIntroTitle"));
 		
-		deck = new JPanel(new CardLayout());
-		configCards = new JPanel[5];
-		
 		// attempt to load lucida grande for the body font,
 		// but if loading fails, use the generic sans serif
 		bodyFont = new Font("Lucida Grande", Font.PLAIN, 14);
@@ -47,6 +45,8 @@ public class Configuration extends JFrame implements ActionListener {
 		}
 		
 		this.setLayout(new BoxLayout(this.getContentPane(), BoxLayout.Y_AXIS));
+		deck = new JPanel(new CardLayout());
+		configCards = new JPanel[5];
 		
 		// build a pane to hold the three buttons at the bottom
 		buttonPane = new JPanel();
@@ -80,11 +80,13 @@ public class Configuration extends JFrame implements ActionListener {
 	
 	public void actionPerformed(ActionEvent e) {
 		if ("next".equals(e.getActionCommand())) {
-			
 			panel++;
 			
 			if (panel == 1) {
 				previous.setEnabled(true);
+				next.setEnabled(false);
+			} else if (panel == 2) {
+				
 			}
 			
 			if (configCards[panel] == null) {
@@ -93,9 +95,25 @@ public class Configuration extends JFrame implements ActionListener {
 			
 			CardLayout deckLayout = (CardLayout) deck.getLayout();
 			deckLayout.next(deck);
+		} else if ("projector".equals(e.getActionCommand())) {
+			next.setEnabled(true);
+			
 		} else if ("cancel".equals(e.getActionCommand())) {
 			
 		}
+	}
+	
+	public void startConfiguration(Properties _config) {
+		config = _config;
+		panel = 0;
+		
+		this.getRootPane().setDefaultButton(next);
+		
+		this.pack();
+		this.setBackground(new Color(232, 232, 232));
+		this.setLocation(configLeft, configTop);
+		this.setSize(configWidth, configHeight);
+		this.setVisible(true);
 	}
 	
 	public void createConfigCard(int index) {
@@ -135,19 +153,25 @@ public class Configuration extends JFrame implements ActionListener {
 			projectorButtonPane.setBorder(BorderFactory.createEmptyBorder(20,20,20,20));
 			projectorButtonPane.add(Box.createHorizontalGlue());
 			
-			// create vertical boxes for each mode button and label
+			ButtonGroup projectorButtonGroup = new ButtonGroup();
+			
+			// create vertical boxes for each mode's label and radio button
 			JPanel mirrorModePanel = new JPanel();
 			mirrorModePanel.setLayout(new BoxLayout(mirrorModePanel, BoxLayout.Y_AXIS));
 			
 			java.net.URL mirrorIconURL = Gypsum.class.getResource("images/mirrorModeIcon.png");
 			ImageIcon mirrorIcon = new ImageIcon(mirrorIconURL);
-			JButton mirrorModeButton = new JButton(mirrorIcon);
-			mirrorModeButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-			mirrorModePanel.add(mirrorModeButton);
-			
-			JLabel mirrorModeLabel = new JLabel(strings.getString("mirrorModeLabel"));
+			JLabel mirrorModeLabel = new JLabel(mirrorIcon);
 			mirrorModeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 			mirrorModePanel.add(mirrorModeLabel);
+			
+			JRadioButton mirrored = new JRadioButton(strings.getString("mirrorModeButtonLabel"));
+			mirrored.setAlignmentX(Component.CENTER_ALIGNMENT);
+			mirrored.setActionCommand("projector");
+			mirrored.addActionListener(this);
+			
+			projectorButtonGroup.add(mirrored);
+			mirrorModePanel.add(mirrored);
 			projectorButtonPane.add(mirrorModePanel);
 			
 			projectorButtonPane.add(Box.createHorizontalGlue());
@@ -157,31 +181,25 @@ public class Configuration extends JFrame implements ActionListener {
 			
 			java.net.URL extendedIconURL = Gypsum.class.getResource("images/extendedModeIcon.png");
 			ImageIcon extendedIcon = new ImageIcon(extendedIconURL);
-			JButton extendedModeButton = new JButton(extendedIcon);
-			extendedModeButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-			extendedModePanel.add(extendedModeButton);
-			
-			JLabel extendedModeLabel = new JLabel(strings.getString("extendedModeLabel"));
+			JLabel extendedModeLabel = new JLabel(extendedIcon);
 			extendedModeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 			extendedModePanel.add(extendedModeLabel);
+			
+			JRadioButton extended = new JRadioButton(strings.getString("extendedModeButtonLabel"));
+			extended.setAlignmentX(Component.CENTER_ALIGNMENT);
+			extended.setActionCommand("projector");
+			extended.addActionListener(this);
+			
+			projectorButtonGroup.add(extended);
+			extendedModePanel.add(extended);
 			projectorButtonPane.add(extendedModePanel);
 			
 			projectorButtonPane.add(Box.createHorizontalGlue());
 			configCards[1].add(projectorButtonPane);
 			
-			deck.add(configCards[1], "projectorCard");			
+			deck.add(configCards[1], "projectorCard");
 		}
 	}
 	
-	public void startConfiguration() {
-		panel = 0;
-		
-		this.getRootPane().setDefaultButton(next);
-		
-		this.pack();
-		this.setBackground(new Color(232, 232, 232));
-		this.setLocation(configLeft, configTop);
-		this.setSize(configWidth, configHeight);
-		this.setVisible(true);
-	}
+	
 }

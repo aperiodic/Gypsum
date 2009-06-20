@@ -73,7 +73,11 @@ public class Gypsum extends JFrame {
 		});
 		
 		if(!loadConfiguration()) {
-			configure();
+			// couldn't find or create the config file
+		} else {
+			if (!config.getProperty("configured").equals("yes")) {
+				configure();
+			}
 		}
 		
 		/*if (!configured) {
@@ -149,39 +153,48 @@ public class Gypsum extends JFrame {
 		setJMenuBar (mainMenuBar);
 	}
 	
+	// attempt to load the configuration file
+	// if it doesn't exist, create a new one
 	public boolean loadConfiguration() {
+		config = new Properties();
 		try {
-			config = new Properties();
 			java.io.FileInputStream configFile = new java.io.FileInputStream("Gypsum.app/Contents/Resources/Gypsum.config");
 			
 			try {
 				config.load(configFile);
 			} catch (java.io.IOException ioe) {
+				System.out.println("There was an IO error while trying to read from the configuration file");
 				return false;
 			}
-			String configured = config.getProperty("configured");
 			
-			if (configured.equals("yes")) {
-				return true;
-			} else {
-				return false;
-			}
-		}
-		catch (java.io.FileNotFoundException fnf) {
+			return true;
+			
+		} catch (java.io.FileNotFoundException fnf) {
+			// the configuration file was not found, so try to 
+			// create a new config file and write to it
+			config.setProperty("configured", "no");
+			
 			try {
 				java.io.FileOutputStream configFile = new java.io.FileOutputStream("Gypsum.app/Contents/Resources/Gypsum.config", true);
-				config.setProperty("configured", "no");
-				config.store(configFile, "");
-				configFile.close();
-			} catch (Exception e) {
-				e.printStackTrace();
+				
+				try {
+					config.store(configFile, "");
+					configFile.close();
+				} catch (java.io.IOException ioe) {
+					System.out.println("There was an IO error while trying to write to the configuration file.");
+					return false;
+				}
+			} catch (java.io.FileNotFoundException frnf) {
+				System.out.println("There was an error while trying to create the configuration file.");
+				return false;
 			}
 			
-			return false;
+			return true;
 		}
 		
 	}
 	
+	// start the configuration process
 	public void configure() {
 		if (configurate == null) {
 			configurate = new Configuration();
