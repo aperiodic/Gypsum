@@ -73,7 +73,7 @@ public class Gypsum extends JFrame {
 		});
 		
 		if(!loadConfiguration()) {
-			
+			configure();
 		}
 		
 		/*if (!configured) {
@@ -154,7 +154,12 @@ public class Gypsum extends JFrame {
 			config = new Properties();
 			java.io.FileInputStream configFile = new java.io.FileInputStream("Gypsum.config");
 			
-			config.load(configFile);
+			try {
+				config.load(configFile);
+			} catch (java.io.IOException ioe) {
+				
+			} 
+			
 			String configured = config.getProperty("configured");
 			
 			if (configured.equals("yes")) {
