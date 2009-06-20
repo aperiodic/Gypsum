@@ -18,10 +18,9 @@ import java.awt.event.*;
 import javax.swing.*;
 
 public class Configuration extends JFrame implements ActionListener {
-	protected JButton cancel, previous, next;
 	protected JPanel buttonPane, deck;
-	protected JRadioButton extended, mirrored;
 	protected JPanel[] configCards;
+	protected JButton cancel, previous, next;
 	protected static int configWidth = 500;
 	protected static int configHeight = 400;
 	protected static int configTop = Toolkit.getDefaultToolkit().getScreenSize().height/2 - 250;
@@ -95,8 +94,13 @@ public class Configuration extends JFrame implements ActionListener {
 			
 			CardLayout deckLayout = (CardLayout) deck.getLayout();
 			deckLayout.next(deck);
-		} else if ("projector".equals(e.getActionCommand())) {
+		} else if ("extended".equals(e.getActionCommand())) {
 			next.setEnabled(true);
+			config.setProperty("projectorMode", "extended");
+			
+		} else if ("mirrored".equals(e.getActionCommand())) {
+			next.setEnabled(true);
+			config.setProperty("projectorMode", "mirrored");
 			
 		} else if ("cancel".equals(e.getActionCommand())) {
 			
@@ -147,31 +151,31 @@ public class Configuration extends JFrame implements ActionListener {
 			projectorMessage.setAlignmentX(Component.CENTER_ALIGNMENT);		
 			configCards[1].add(projectorMessage);
 			
-			// create a horzintal box to hold the row of projector mode buttons
+			ButtonGroup projectorButtonGroup = new ButtonGroup();
+			
+			// create a horizontal box to hold the row of projector mode buttons
 			JPanel projectorButtonPane = new JPanel();
 			projectorButtonPane.setLayout(new BoxLayout(projectorButtonPane, BoxLayout.X_AXIS));
 			projectorButtonPane.setBorder(BorderFactory.createEmptyBorder(20,20,20,20));
 			projectorButtonPane.add(Box.createHorizontalGlue());
 			
-			ButtonGroup projectorButtonGroup = new ButtonGroup();
-			
-			// create vertical boxes for each mode's label and radio button
+			// create vertical boxes for each mode button and label
 			JPanel mirrorModePanel = new JPanel();
 			mirrorModePanel.setLayout(new BoxLayout(mirrorModePanel, BoxLayout.Y_AXIS));
 			
 			java.net.URL mirrorIconURL = Gypsum.class.getResource("images/mirrorModeIcon.png");
 			ImageIcon mirrorIcon = new ImageIcon(mirrorIconURL);
-			JLabel mirrorModeLabel = new JLabel(mirrorIcon);
-			mirrorModeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-			mirrorModePanel.add(mirrorModeLabel);
+			JLabel mirroredLabel = new JLabel(mirrorIcon);
+			mirroredLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+			mirrorModePanel.add(mirroredLabel);
 			
-			JRadioButton mirrored = new JRadioButton(strings.getString("mirrorModeButtonLabel"));
-			mirrored.setAlignmentX(Component.CENTER_ALIGNMENT);
-			mirrored.setActionCommand("projector");
-			mirrored.addActionListener(this);
+			JRadioButton mirroredRadioButton = new JRadioButton(strings.getString("mirroredModeLabel"));
+			mirroredRadioButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+			mirroredRadioButton.setActionCommand("mirrored");
+			mirroredRadioButton.addActionListener(this);
 			
-			projectorButtonGroup.add(mirrored);
-			mirrorModePanel.add(mirrored);
+			projectorButtonGroup.add(mirroredRadioButton);
+			mirrorModePanel.add(mirroredRadioButton);
 			projectorButtonPane.add(mirrorModePanel);
 			
 			projectorButtonPane.add(Box.createHorizontalGlue());
@@ -181,13 +185,13 @@ public class Configuration extends JFrame implements ActionListener {
 			
 			java.net.URL extendedIconURL = Gypsum.class.getResource("images/extendedModeIcon.png");
 			ImageIcon extendedIcon = new ImageIcon(extendedIconURL);
-			JLabel extendedModeLabel = new JLabel(extendedIcon);
-			extendedModeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-			extendedModePanel.add(extendedModeLabel);
+			JLabel extendedLabel = new JLabel(extendedIcon);
+			extendedLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+			extendedModePanel.add(extendedLabel);
 			
-			JRadioButton extended = new JRadioButton(strings.getString("extendedModeButtonLabel"));
+			JRadioButton extended = new JRadioButton(strings.getString("extendedModeLabel"));
 			extended.setAlignmentX(Component.CENTER_ALIGNMENT);
-			extended.setActionCommand("projector");
+			extended.setActionCommand("extended");
 			extended.addActionListener(this);
 			
 			projectorButtonGroup.add(extended);
@@ -197,7 +201,8 @@ public class Configuration extends JFrame implements ActionListener {
 			projectorButtonPane.add(Box.createHorizontalGlue());
 			configCards[1].add(projectorButtonPane);
 			
-			deck.add(configCards[1], "projectorCard");
+			deck.add(configCards[1], "projectorCard");			
+			
 		}
 	}
 	

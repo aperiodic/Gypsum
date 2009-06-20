@@ -80,12 +80,10 @@ public class Gypsum extends JFrame {
 			}
 		}
 		
-		/*if (!configured) {
-			configure();
-		} else {
-			setSize(310, 150);
-			setVisible(true);
-		}*/
+		/*
+		setSize(310, 150);
+		setVisible(true);
+		*/
 	}
 
 	public void about(ApplicationEvent e) {
@@ -199,7 +197,7 @@ public class Gypsum extends JFrame {
 		if (configurate == null) {
 			configurate = new Configuration();
 		}
-		configurate.startConfiguration();
+		configurate.startConfiguration(config);
 	}
 
 	public void paint(Graphics g) {
