@@ -25,11 +25,14 @@ public class VideoMonitor extends JPanel implements Runnable {
 	static int MAX_BLOB_AREA = WIDTH*HEIGHT/2;
 	static int MIN_BLOB_AREA = 100;
 	
-	protected OpenCV cv = null;
-	Thread t = null;
-	Image frame = null;
-	protected int contrast, threshold;
+	Thread t;
+	Image frame;
+	
+	protected OpenCV cv;
 	protected ArrayList rectangles;
+	
+	protected int contrast, threshold;
+	protected boolean thresholded;
 	
 	VideoMonitor() {
 		super();
@@ -38,12 +41,12 @@ public class VideoMonitor extends JPanel implements Runnable {
 		cv.capture(WIDTH, HEIGHT);
 		contrast = 0;
 		threshold = 150;
+		thresholded = false;
 		
 		rectangles = new ArrayList();
 		
 		this.setBackground(Color.BLACK);
 		this.setVisible(true);
-		
 		
 		t = new Thread(this);
 		t.start();
@@ -72,11 +75,20 @@ public class VideoMonitor extends JPanel implements Runnable {
 				// and threshold filters
 				cv.convert(OpenCV.GRAY);
 				cv.contrast(contrast);
-				cv.threshold(threshold);
 				
-				// save the image
-				MemoryImageSource mis = new MemoryImageSource(cv.width, cv.height, cv.pixels(), 0, cv.width);
-				frame = createImage(mis);
+				if (thresholded) {
+					// threshold, then save the image
+					cv.threshold(threshold);
+					
+					MemoryImageSource mis = new MemoryImageSource(cv.width, cv.height, cv.pixels(), 0, cv.width);
+					frame = createImage(mis);
+				} else {
+					// save the image, then threshold
+					MemoryImageSource mis = new MemoryImageSource(cv.width, cv.height, cv.pixels(), 0, cv.width);
+					frame = createImage(mis);
+					
+					cv.threshold(threshold);
+				}
 				
 				// find the blobs in the image
 				Blob[] blobs = cv.blobs(200, WIDTH*HEIGHT/2, 100, true, OpenCV.MAX_VERTICES*4);
@@ -84,9 +96,10 @@ public class VideoMonitor extends JPanel implements Runnable {
 				
 				// scan through the blobs to find rects
 				for (int i = 0; i < blobs.length; i++) {
+					Blob blob = blobs[i];
 					
 					//-- make sure the blob is big enough to matter --//
-					int containingRectArea = blobs[i].rectangle.height * blobs[i].rectangle.width;
+					int containingRectArea = blob.rectangle.height * blob.rectangle.width;
 					if (containingRectArea < MIN_RECT_AREA || containingRectArea > MAX_RECT_AREA) {
 						continue;
 					}
@@ -99,8 +112,8 @@ public class VideoMonitor extends JPanel implements Runnable {
 					int minYPX = HEIGHT+WIDTH;
 					int TLindex = 0;
 					int BRindex = 0;
-					for (int j = 0; j < blobs[i].points.length; j++) {
-						int ypx = blobs[i].points[j].y + blobs[i].points[j].x;
+					for (int j = 0; j < blob.points.length; j++) {
+						int ypx = blob.points[j].y + blob.points[j].x;
 						
 						if (ypx > maxYPX) {
 							maxYPX = ypx;
@@ -119,8 +132,8 @@ public class VideoMonitor extends JPanel implements Runnable {
 					int minYMX = HEIGHT;
 					int TRindex = 0;
 					int BLindex = 0;
-					for (int j = 0; j < blobs[i].points.length; j++) {
-						int ymx = blobs[i].points[j].y - blobs[i].points[j].x;
+					for (int j = 0; j < blob.points.length; j++) {
+						int ymx = blob.points[j].y - blob.points[j].x;
 						
 						if (ymx > maxYMX) {
 							maxYMX = ymx;
@@ -133,14 +146,23 @@ public class VideoMonitor extends JPanel implements Runnable {
 						}
 					}
 					
+					// make sure that one of the sides of the blob is not
+					// up against the side of the screen
+					if (blob.points[TLindex].x == 0 || blob.points[TLindex].y == 0 ||
+						blob.points[TRindex].x == WIDTH-1 || blob.points[TRindex].y == 0 ||
+						blob.points[BRindex].x == WIDTH-1 || blob.points[BRindex].y == HEIGHT-1 ||
+						blob.points[BLindex].x == 0 || blob.points[BLindex].y == HEIGHT-1) {
+						continue;
+					}
+					
 					// find the difference in area between the TR-TL-BL-BR rectangle
 					// and the containing rectangle
-					int cornerRectArea = quadArea(blobs[i].points[TLindex], blobs[i].points[TRindex],
-												  blobs[i].points[BRindex], blobs[i].points[BLindex]);
+					int cornerRectArea = quadArea(blob.points[TLindex], blob.points[TRindex],
+												  blob.points[BRindex], blob.points[BLindex]);
 					int areaDiff = Math.abs(containingRectArea - cornerRectArea);
 					
 					if (areaDiff / (float)containingRectArea < 0.2) {
-						rectangles.add(blobs[i]);
+						rectangles.add(blob);
 					}
 				}
 				
@@ -159,6 +181,10 @@ public class VideoMonitor extends JPanel implements Runnable {
 	
 	public void setThreshold(int newThreshold) {
 		threshold = newThreshold;
+	}
+	
+	public void setThresholded(boolean enabled) {
+		thresholded = enabled;
 	}
 }
 

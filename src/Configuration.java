@@ -18,7 +18,7 @@ import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
 
-public class Configuration extends JFrame implements ActionListener, ChangeListener {
+public class Configuration extends JFrame implements ActionListener, ChangeListener, MouseListener {
 	protected JPanel buttonPane, deck;
 	protected JPanel[] configCards;
 	protected JButton cancel, previous, next;
@@ -79,6 +79,19 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 		this.add(buttonPane);
 	}
 	
+	public void startConfiguration(Properties _config) {
+		config = _config;
+		panel = 0;
+		
+		this.getRootPane().setDefaultButton(next);
+		
+		this.pack();
+		this.setBackground(new Color(232, 232, 232));
+		this.setLocation(configLeft, configTop);
+		this.setSize(configWidth, configHeight);
+		this.setVisible(true);
+	}
+	
 	public void actionPerformed(ActionEvent e) {
 		if ("next".equals(e.getActionCommand())) {
 			panel++;
@@ -126,6 +139,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 	
 	public void stateChanged(ChangeEvent e) {
 		JComponent theComponent = (JComponent) e.getSource();
+		
 		if ("contrastSlider".equals(theComponent.getName())) {
 			JSlider cSlider = (JSlider) theComponent;
 			vidMon.setContrast(cSlider.getValue());
@@ -137,18 +151,21 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 		}
 	}
 	
-	public void startConfiguration(Properties _config) {
-		config = _config;
-		panel = 0;
-		
-		this.getRootPane().setDefaultButton(next);
-		
-		this.pack();
-		this.setBackground(new Color(232, 232, 232));
-		this.setLocation(configLeft, configTop);
-		this.setSize(configWidth, configHeight);
-		this.setVisible(true);
+	public void mousePressed(MouseEvent e) {
+		if ("thresholdSlider".equals(e.getComponent().getName())) {
+			vidMon.setThresholded(true);
+		}
 	}
+	
+	public void mouseReleased(MouseEvent e) {
+		if ("thresholdSlider".equals(e.getComponent().getName())) {
+			vidMon.setThresholded(false);
+		}
+	}
+	
+	public void mouseEntered(MouseEvent e) {}
+	public void mouseExited(MouseEvent e) {}
+	public void mouseClicked(MouseEvent e) {}
 	
 	public void createConfigCard(int index) {
 		if (index == 0) {
@@ -272,6 +289,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			JSlider thresholdSlider = new JSlider(JSlider.VERTICAL, 0, 255, 150);
 			thresholdSlider.setName("thresholdSlider");
 			thresholdSlider.addChangeListener(this);
+			thresholdSlider.addMouseListener(this);
 			thresholdSliderPanel.add(thresholdSlider);
 			
 			JLabel thresholdLabel = new JLabel(strings.getString("thresholdLabel"));
