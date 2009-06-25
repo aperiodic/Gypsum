@@ -16,15 +16,17 @@ import java.awt.*;
 import java.awt.event.*;
 
 import javax.swing.*;
+import javax.swing.event.*;
 
-public class Configuration extends JFrame implements ActionListener {
+public class Configuration extends JFrame implements ActionListener, ChangeListener {
 	protected JPanel buttonPane, deck;
 	protected JPanel[] configCards;
 	protected JButton cancel, previous, next;
+	protected VideoMonitor vidMon;
 	protected static int configWidth = 500;
 	protected static int configHeight = 400;
-	protected static int configTop = Toolkit.getDefaultToolkit().getScreenSize().height/2 - 250;
-	protected static int configLeft = Toolkit.getDefaultToolkit().getScreenSize().width/2 - 250;
+	protected static int configTop = Toolkit.getDefaultToolkit().getScreenSize().height/2 - (configHeight/2) - 20;
+	protected static int configLeft = Toolkit.getDefaultToolkit().getScreenSize().width/2 - (configWidth/2);
 	protected int panel;
 	protected Font titleFont, bodyFont;
 	protected ResourceBundle strings;
@@ -84,8 +86,11 @@ public class Configuration extends JFrame implements ActionListener {
 			if (panel == 1) {
 				previous.setEnabled(true);
 				next.setEnabled(false);
+				this.setTitle(strings.getString("configTitle"));
 			} else if (panel == 2) {
 				
+			} else if (panel == configCards.length - 1) {
+				// change "next" to "finish"
 			}
 			
 			if (configCards[panel] == null) {
@@ -94,6 +99,18 @@ public class Configuration extends JFrame implements ActionListener {
 			
 			CardLayout deckLayout = (CardLayout) deck.getLayout();
 			deckLayout.next(deck);
+		} else if ("previous".equals(e.getActionCommand())) {
+			if (panel > 0) {
+				panel--;
+			}
+			
+			if (panel == 0) {
+				previous.setEnabled(false);
+				next.setEnabled(true);
+			}
+			
+			CardLayout deckLayout = (CardLayout) deck.getLayout();
+			deckLayout.previous(deck);
 		} else if ("extended".equals(e.getActionCommand())) {
 			next.setEnabled(true);
 			config.setProperty("projectorMode", "extended");
@@ -104,6 +121,19 @@ public class Configuration extends JFrame implements ActionListener {
 			
 		} else if ("cancel".equals(e.getActionCommand())) {
 			
+		}
+	}
+	
+	public void stateChanged(ChangeEvent e) {
+		JComponent theComponent = (JComponent) e.getSource();
+		if ("contrastSlider".equals(theComponent.getName())) {
+			JSlider cSlider = (JSlider) theComponent;
+			vidMon.setContrast(cSlider.getValue());
+			config.setProperty("contrast", "" + cSlider.getValue());
+		} else if ("thresholdSlider".equals(theComponent.getName())) {
+			JSlider tSlider = (JSlider) theComponent;
+			vidMon.setThreshold(tSlider.getValue());
+			config.setProperty("threshold", "" + tSlider.getValue());
 		}
 	}
 	
@@ -203,8 +233,60 @@ public class Configuration extends JFrame implements ActionListener {
 			
 			deck.add(configCards[1], "projectorCard");			
 			
+		} else if (index == 2) {
+			// -- THIRD CONFIGURATION CARD -- //
+			configCards[2] = new JPanel();
+			configCards[2].setLayout(new BoxLayout(configCards[2], BoxLayout.Y_AXIS));
+			
+			JLabel imageAdjustMessage = new JLabel(strings.getString("configImageMessage"));
+			imageAdjustMessage.setFont(bodyFont);
+			imageAdjustMessage.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+			imageAdjustMessage.setAlignmentX(Component.CENTER_ALIGNMENT);
+			configCards[2].add(imageAdjustMessage);
+			
+			JPanel videoPanel = new JPanel();
+			videoPanel.setLayout(new BoxLayout(videoPanel, BoxLayout.X_AXIS));
+			videoPanel.add(Box.createHorizontalStrut(22));
+			
+			JPanel contrastSliderPanel = new JPanel();
+			contrastSliderPanel.setLayout(new BoxLayout(contrastSliderPanel, BoxLayout.Y_AXIS));
+			JSlider contrastSlider = new JSlider(JSlider.VERTICAL, -128, 128, 0);
+			contrastSlider.setName("contrastSlider");
+			contrastSlider.addChangeListener(this);
+			contrastSliderPanel.add(contrastSlider);
+			
+			JLabel contrastLabel = new JLabel(strings.getString("contrastLabel"));
+			contrastLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+			contrastSliderPanel.add(contrastLabel);
+			
+			videoPanel.add(contrastSliderPanel);
+			videoPanel.add(Box.createHorizontalStrut(13));
+			
+			vidMon = new VideoMonitor();
+			vidMon.setAlignmentX(Component.CENTER_ALIGNMENT);
+			videoPanel.add(vidMon);
+			videoPanel.add(Box.createHorizontalStrut(13));
+			
+			JPanel thresholdSliderPanel = new JPanel();
+			thresholdSliderPanel.setLayout(new BoxLayout(thresholdSliderPanel, BoxLayout.Y_AXIS));
+			JSlider thresholdSlider = new JSlider(JSlider.VERTICAL, 0, 255, 150);
+			thresholdSlider.setName("thresholdSlider");
+			thresholdSlider.addChangeListener(this);
+			thresholdSliderPanel.add(thresholdSlider);
+			
+			JLabel thresholdLabel = new JLabel(strings.getString("thresholdLabel"));
+			thresholdLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+			thresholdSliderPanel.add(thresholdLabel);
+			
+			videoPanel.add(thresholdSliderPanel);
+			videoPanel.add(Box.createHorizontalStrut(22));
+			configCards[2].add(videoPanel);
+			
+			deck.add(configCards[2], "imageAdjustCard");
 		}
 	}
+	
+	
 	
 	
 }

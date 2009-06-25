@@ -36,6 +36,8 @@
 		<dict>
 			<key>apple.laf.useScreenMenuBar</key>
 			<string>true</string>
+			<key>java.system.library</key>
+			<string>/System/Library/Java/Extensions/</string>
 		</dict>
 	</dict>
 </dict>
