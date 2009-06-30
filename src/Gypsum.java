@@ -41,7 +41,6 @@ public class Gypsum extends JFrame {
 		// New localities can be added by adding additional properties files.
 		strings = ResourceBundle.getBundle ("strings", Locale.getDefault());
 		setTitle(strings.getString("frameConstructor"));
-		this.getContentPane().setLayout(null);
 		
 		createActions();
 		addMenus();
@@ -77,80 +76,12 @@ public class Gypsum extends JFrame {
 		} else {
 			if (!config.getProperty("configured").equals("yes")) {
 				configure();
+			} else {
+				monitor();
 			}
 		}
-		
-		/*
-		setSize(310, 150);
-		setVisible(true);
-		*/
 	}
 
-	public void about(ApplicationEvent e) {
-		aboutBox.setResizable(false);
-		aboutBox.setVisible(true);
-	}
-
-	public void preferences(ApplicationEvent e) {
-		prefs.setResizable(false);
-		prefs.setVisible(true);
-	}
-
-	public void quit(ApplicationEvent e) {	
-		System.exit(0);
-	}
-
-	public void createActions() {
-		int shortcutKeyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
-
-		//Create actions that can be used by menus, buttons, toolbars, etc.
-		newAction = new newActionClass( strings.getString("newItem"),
-											KeyStroke.getKeyStroke(KeyEvent.VK_N, shortcutKeyMask) );
-		openAction = new openActionClass( strings.getString("openItem"),
-											KeyStroke.getKeyStroke(KeyEvent.VK_O, shortcutKeyMask) );
-		closeAction = new closeActionClass( strings.getString("closeItem"),
-											KeyStroke.getKeyStroke(KeyEvent.VK_W, shortcutKeyMask) );
-		saveAction = new saveActionClass( strings.getString("saveItem"),
-											KeyStroke.getKeyStroke(KeyEvent.VK_S, shortcutKeyMask) );
-		saveAsAction = new saveAsActionClass( strings.getString("saveAsItem") );
-
-		undoAction = new undoActionClass( strings.getString("undoItem"),
-											KeyStroke.getKeyStroke(KeyEvent.VK_Z, shortcutKeyMask) );
-		cutAction = new cutActionClass( strings.getString("cutItem"),
-											KeyStroke.getKeyStroke(KeyEvent.VK_X, shortcutKeyMask) );
-		copyAction = new copyActionClass( strings.getString("copyItem"),
-											KeyStroke.getKeyStroke(KeyEvent.VK_C, shortcutKeyMask) );
-		pasteAction = new pasteActionClass( strings.getString("pasteItem"),
-											KeyStroke.getKeyStroke(KeyEvent.VK_V, shortcutKeyMask) );
-		clearAction = new clearActionClass( strings.getString("clearItem") );
-		selectAllAction = new selectAllActionClass( strings.getString("selectAllItem"),
-											KeyStroke.getKeyStroke(KeyEvent.VK_A, shortcutKeyMask) );
-	}
-	
-	public void addMenus() {
-
-		fileMenu = new JMenu(strings.getString("fileMenu"));
-		fileMenu.add(new JMenuItem(newAction));
-		fileMenu.add(new JMenuItem(openAction));
-		fileMenu.add(new JMenuItem(closeAction));
-		fileMenu.add(new JMenuItem(saveAction));
-		fileMenu.add(new JMenuItem(saveAsAction));
-		mainMenuBar.add(fileMenu);
-
-		editMenu = new JMenu(strings.getString("editMenu"));
-		editMenu.add(new JMenuItem(undoAction));
-		editMenu.addSeparator();
-		editMenu.add(new JMenuItem(cutAction));
-		editMenu.add(new JMenuItem(copyAction));
-		editMenu.add(new JMenuItem(pasteAction));
-		editMenu.add(new JMenuItem(clearAction));
-		editMenu.addSeparator();
-		editMenu.add(new JMenuItem(selectAllAction));
-		mainMenuBar.add(editMenu);
-
-		setJMenuBar (mainMenuBar);
-	}
-	
 	// attempt to load the configuration file
 	// if it doesn't exist, create a new one
 	public boolean loadConfiguration() {
@@ -173,17 +104,17 @@ public class Gypsum extends JFrame {
 			config.setProperty("configured", "no");
 			
 			try {
-				java.io.FileOutputStream configFile = new java.io.FileOutputStream("Gypsum.app/Contents/Resources/Gypsum.config", true);
+				java.io.FileOutputStream configFile = new java.io.FileOutputStream("Gypsum.app/Contents/Resources/Gypsum.config");
 				
 				try {
 					config.store(configFile, "");
 					configFile.close();
 				} catch (java.io.IOException ioe) {
-					System.out.println("There was an IO error while trying to write to the configuration file.");
+					System.err.println("There was an IO error while trying to write to the configuration file.");
 					return false;
 				}
 			} catch (java.io.FileNotFoundException frnf) {
-				System.out.println("There was an error while trying to create the configuration file.");
+				System.err.println("There was an error while trying to create the configuration file.");
 				return false;
 			}
 			
@@ -195,17 +126,92 @@ public class Gypsum extends JFrame {
 	// start the configuration process
 	public void configure() {
 		if (configurate == null) {
-			configurate = new Configuration();
+			configurate = new Configuration(this);
 		}
+		this.setVisible(false);
 		configurate.startConfiguration(config);
+	}
+	
+	public void configurationFinished() {
+		monitor();
+	}
+	
+	public void monitor() {
+		this.add(new VideoAdjustor());
+		
+		setSize(740, 502);
+		setVisible(true);
 	}
 
 	public void paint(Graphics g) {
 		super.paint(g);
-		g.setColor(Color.blue);
-		g.setFont (font);
-		g.drawString(strings.getString("message"), 40, 80);
 	}
+	
+	public void about(ApplicationEvent e) {
+		aboutBox.setResizable(false);
+		aboutBox.setVisible(true);
+	}
+	
+	public void preferences(ApplicationEvent e) {
+		prefs.setResizable(false);
+		prefs.setVisible(true);
+	}
+	
+	public void quit(ApplicationEvent e) {	
+		System.exit(0);
+	}
+	
+	public void createActions() {
+		int shortcutKeyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+		
+		//Create actions that can be used by menus, buttons, toolbars, etc.
+		newAction = new newActionClass( strings.getString("newItem"),
+									   KeyStroke.getKeyStroke(KeyEvent.VK_N, shortcutKeyMask) );
+		openAction = new openActionClass( strings.getString("openItem"),
+										 KeyStroke.getKeyStroke(KeyEvent.VK_O, shortcutKeyMask) );
+		closeAction = new closeActionClass( strings.getString("closeItem"),
+										   KeyStroke.getKeyStroke(KeyEvent.VK_W, shortcutKeyMask) );
+		saveAction = new saveActionClass( strings.getString("saveItem"),
+										 KeyStroke.getKeyStroke(KeyEvent.VK_S, shortcutKeyMask) );
+		saveAsAction = new saveAsActionClass( strings.getString("saveAsItem") );
+		
+		undoAction = new undoActionClass( strings.getString("undoItem"),
+										 KeyStroke.getKeyStroke(KeyEvent.VK_Z, shortcutKeyMask) );
+		cutAction = new cutActionClass( strings.getString("cutItem"),
+									   KeyStroke.getKeyStroke(KeyEvent.VK_X, shortcutKeyMask) );
+		copyAction = new copyActionClass( strings.getString("copyItem"),
+										 KeyStroke.getKeyStroke(KeyEvent.VK_C, shortcutKeyMask) );
+		pasteAction = new pasteActionClass( strings.getString("pasteItem"),
+										   KeyStroke.getKeyStroke(KeyEvent.VK_V, shortcutKeyMask) );
+		clearAction = new clearActionClass( strings.getString("clearItem") );
+		selectAllAction = new selectAllActionClass( strings.getString("selectAllItem"),
+												   KeyStroke.getKeyStroke(KeyEvent.VK_A, shortcutKeyMask) );
+	}
+	
+	public void addMenus() {
+		
+		fileMenu = new JMenu(strings.getString("fileMenu"));
+		fileMenu.add(new JMenuItem(newAction));
+		fileMenu.add(new JMenuItem(openAction));
+		fileMenu.add(new JMenuItem(closeAction));
+		fileMenu.add(new JMenuItem(saveAction));
+		fileMenu.add(new JMenuItem(saveAsAction));
+		mainMenuBar.add(fileMenu);
+		
+		editMenu = new JMenu(strings.getString("editMenu"));
+		editMenu.add(new JMenuItem(undoAction));
+		editMenu.addSeparator();
+		editMenu.add(new JMenuItem(cutAction));
+		editMenu.add(new JMenuItem(copyAction));
+		editMenu.add(new JMenuItem(pasteAction));
+		editMenu.add(new JMenuItem(clearAction));
+		editMenu.addSeparator();
+		editMenu.add(new JMenuItem(selectAllAction));
+		mainMenuBar.add(editMenu);
+		
+		setJMenuBar (mainMenuBar);
+	}
+	
 	
 	public class newActionClass extends AbstractAction {
 		public newActionClass(String text, KeyStroke shortcut) {

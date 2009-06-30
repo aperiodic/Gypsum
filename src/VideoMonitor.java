@@ -9,6 +9,7 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.MemoryImageSource;
+import java.awt.image.BufferedImage;
 
 import javax.swing.*;
 
@@ -18,12 +19,12 @@ import hypermedia.video.OpenCV;
 import hypermedia.video.Blob;
 
 public class VideoMonitor extends JPanel implements Runnable {
-	static int WIDTH = 320;
-	static int HEIGHT = 240;
-	static int MAX_RECT_AREA = WIDTH*HEIGHT*3/4;
-	static int MIN_RECT_AREA = WIDTH*HEIGHT/60;
-	static int MAX_BLOB_AREA = WIDTH*HEIGHT/2;
-	static int MIN_BLOB_AREA = 100;
+	int WIDTH = 320;
+	int HEIGHT = 240;
+	int MAX_RECT_AREA;
+	int MIN_RECT_AREA;
+	int MAX_BLOB_AREA;
+	int MIN_BLOB_AREA;
 	
 	Thread t;
 	Image frame;
@@ -32,24 +33,52 @@ public class VideoMonitor extends JPanel implements Runnable {
 	protected ArrayList rectangles;
 	
 	protected int contrast, threshold;
-	protected boolean thresholded;
+	protected boolean thresholded, shouldStop, edgeDetect;
 	
 	VideoMonitor() {
 		super();
 		
+		WIDTH = 320;
+		HEIGHT = 240;
+		
+		makeRectBounds();
+		init();
+	}
+	
+	VideoMonitor(int width, int height) {
+		super();
+		
+		WIDTH = width;
+		HEIGHT = height;
+		
+		makeRectBounds();
+		init();
+	}
+	
+	protected void init() {
 		cv = new OpenCV();
 		cv.capture(WIDTH, HEIGHT);
 		contrast = 0;
 		threshold = 150;
 		thresholded = false;
+		edgeDetect = false;
 		
 		rectangles = new ArrayList();
 		
+		this.setBounds(0, 0, WIDTH, HEIGHT);
 		this.setBackground(Color.BLACK);
 		this.setVisible(true);
 		
+		shouldStop = false;
 		t = new Thread(this);
 		t.start();
+	}
+	
+	protected void makeRectBounds() {
+		MAX_RECT_AREA = WIDTH*HEIGHT*3/4;
+		MIN_RECT_AREA = WIDTH*HEIGHT/60;
+		MAX_BLOB_AREA = WIDTH*HEIGHT/2;
+		MIN_BLOB_AREA = 100;
 	}
 	
 	public void paint(Graphics g) {
@@ -65,9 +94,17 @@ public class VideoMonitor extends JPanel implements Runnable {
 	}
 	
 	public void run() {
+		if (shouldStop) {
+			return;
+		}
+		
 		while (t != null && cv != null) {
 			try {
 				t.sleep(1000/20);
+				
+				if (shouldStop) {
+					return;
+				}
 				
 				cv.read();
 				
@@ -90,6 +127,16 @@ public class VideoMonitor extends JPanel implements Runnable {
 					cv.threshold(threshold);
 				}
 				
+				if (edgeDetect) {
+					BufferedImage bufIm = toBufferedImage(frame);
+					CannyEdgeDetector edged = new CannyEdgeDetector();
+					edged.setHighThreshold(12.5f);
+					edged.setLowThreshold(7.5f);
+					edged.setSourceImage(bufIm);
+					edged.process();
+					frame = edged.getEdgesImage();
+				}
+								
 				// find the blobs in the image
 				Blob[] blobs = cv.blobs(200, WIDTH*HEIGHT/2, 100, true, OpenCV.MAX_VERTICES*4);
 				rectangles.clear();
@@ -144,14 +191,14 @@ public class VideoMonitor extends JPanel implements Runnable {
 							minYMX = ymx;
 							TRindex = j;
 						}
-					}
+					}	
 					
 					// make sure that one of the sides of the blob is not
 					// up against the side of the screen
-					if (blob.points[TLindex].x == 0 || blob.points[TLindex].y == 0 ||
-						blob.points[TRindex].x == WIDTH-1 || blob.points[TRindex].y == 0 ||
-						blob.points[BRindex].x == WIDTH-1 || blob.points[BRindex].y == HEIGHT-1 ||
-						blob.points[BLindex].x == 0 || blob.points[BLindex].y == HEIGHT-1) {
+					if (blob.points[TLindex].x <= 1 || blob.points[TLindex].y <= 1 ||
+						blob.points[TRindex].x >= WIDTH-2 || blob.points[TRindex].y <= 1 ||
+						blob.points[BRindex].x >= WIDTH-2 || blob.points[BRindex].y >= HEIGHT-2 ||
+						blob.points[BLindex].x <= 1 || blob.points[BLindex].y >= HEIGHT-2) {
 						continue;
 					}
 					
@@ -171,6 +218,42 @@ public class VideoMonitor extends JPanel implements Runnable {
 		}
 	}
 	
+	// This method returns a buffered image with the contents of an image
+    public static BufferedImage toBufferedImage(Image image) {
+        if (image instanceof BufferedImage) {
+            return (BufferedImage)image;
+        }
+		
+        // This code ensures that all the pixels in the image are loaded
+        image = new ImageIcon(image).getImage();
+		
+        // Create a buffered image with a format that's compatible with the screen
+        BufferedImage bimage = null;
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        try {
+            // Create the buffered image
+            GraphicsDevice gs = ge.getDefaultScreenDevice();
+            GraphicsConfiguration gc = gs.getDefaultConfiguration();
+            bimage = gc.createCompatibleImage(image.getWidth(null), image.getHeight(null), Transparency.OPAQUE);
+        } catch (HeadlessException e) {
+            // The system does not have a screen
+        }
+		
+        if (bimage == null) {
+            // Create a buffered image using the default color model
+            bimage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_RGB);
+        }
+		
+        // Copy image to buffered image
+        Graphics g = bimage.createGraphics();
+		
+        // Paint the image onto the buffered image
+        g.drawImage(image, 0, 0, null);
+        g.dispose();
+		
+		return bimage;
+	}
+	
 	private int quadArea(Point a, Point b, Point c, Point d) {
 		return Math.abs( (c.x - a.x)*(d.y - b.y) - (d.x - b.x)*(c.y - a.y) )/2;
 	}
@@ -185,6 +268,18 @@ public class VideoMonitor extends JPanel implements Runnable {
 	
 	public void setThresholded(boolean enabled) {
 		thresholded = enabled;
+	}
+	
+	public void setEdgeDetection(boolean enabled) {
+		edgeDetect = enabled;
+	}
+	
+	public void start() {
+		shouldStop = false;
+	}
+	
+	public void stop() {
+		shouldStop = true;
 	}
 }
 

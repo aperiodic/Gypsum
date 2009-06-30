@@ -19,6 +19,7 @@ import javax.swing.*;
 import javax.swing.event.*;
 
 public class Configuration extends JFrame implements ActionListener, ChangeListener, MouseListener {
+	protected Gypsum app;
 	protected JPanel buttonPane, deck;
 	protected JPanel[] configCards;
 	protected JButton cancel, previous, next;
@@ -32,9 +33,10 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 	protected ResourceBundle strings;
 	protected Properties config;
 	
-	public Configuration() {
+	public Configuration(Gypsum _app) {
 		super("");
 		this.setResizable(false);
+		app = _app;
 		strings = ResourceBundle.getBundle("strings", Locale.getDefault());
 		setTitle(strings.getString("configIntroTitle"));
 		
@@ -47,7 +49,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 		
 		this.setLayout(new BoxLayout(this.getContentPane(), BoxLayout.Y_AXIS));
 		deck = new JPanel(new CardLayout());
-		configCards = new JPanel[5];
+		configCards = new JPanel[3];
 		
 		// build a pane to hold the three buttons at the bottom
 		buttonPane = new JPanel();
@@ -100,10 +102,10 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 				previous.setEnabled(true);
 				next.setEnabled(false);
 				this.setTitle(strings.getString("configTitle"));
-			} else if (panel == 2) {
-				
+			
 			} else if (panel == configCards.length - 1) {
-				// change "next" to "finish"
+				next.setText("Finish");
+				next.setActionCommand("finish");
 			}
 			
 			if (configCards[panel] == null) {
@@ -124,6 +126,27 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			
 			CardLayout deckLayout = (CardLayout) deck.getLayout();
 			deckLayout.previous(deck);
+		} else if ("finish".equals(e.getActionCommand())) {
+			config.setProperty("configured", "yes");
+			try {
+				java.io.FileOutputStream configFile = new java.io.FileOutputStream("Gypsum.app/Contents/Resources/Gypsum.config");
+				
+				try {
+					config.store(configFile, "");
+					configFile.close();
+				} catch (java.io.IOException ioe) {
+					System.err.println("There was an IO error while trying to write the config file");
+				}
+				
+			} catch (java.io.FileNotFoundException fnf) {
+				System.err.println("There was an error while trying to create the configuration file");
+			}
+			
+			this.setVisible(false);
+			vidMon.stop();
+			
+			app.configurationFinished();
+				
 		} else if ("extended".equals(e.getActionCommand())) {
 			next.setEnabled(true);
 			config.setProperty("projectorMode", "extended");
