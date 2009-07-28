@@ -73,6 +73,7 @@
 		<exec executable="/bin/chmod">
 			<arg line="755 '${application.macos.stub}'"/>
 		</exec>	
+		<!-- remove x86_64 architecture from the application stub -->
 		<exec executable="/usr/bin/lipo">
 			<arg line=" '${application.macos.stub}' -remove x86_64 -output '${application.macos.stub}'"/>
 		</exec>

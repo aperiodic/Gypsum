@@ -27,6 +27,7 @@ public class Gypsum extends JFrame {
 	protected AboutBox aboutBox;
 	protected PrefPane prefs;
 	protected Configuration configurate;
+	protected NewLecture newlect;
 	private Application fApplication = Application.getApplication();
 	protected Action newAction, openAction, closeAction, saveAction, saveAsAction,
 					 undoAction, cutAction, copyAction, pasteAction, clearAction, selectAllAction;
@@ -74,12 +75,14 @@ public class Gypsum extends JFrame {
 		if(!loadConfiguration()) {
 			// couldn't find or create the config file
 		} else {
-			if (!config.getProperty("configured").equals("yes")) {
-				configure();
-			} else {
-				monitor();
-			}
+			//if (!config.getProperty("configured").equals("yes")) {
+			//	configure();
+				
+			//} else {
+				//monitor();
+			//}
 		}
+		setVisible(true);
 	}
 
 	// attempt to load the configuration file
@@ -136,6 +139,10 @@ public class Gypsum extends JFrame {
 		monitor();
 	}
 	
+	public Properties getConfiguration() {
+		return config;
+	}
+	
 	public void monitor() {
 		this.add(new VideoAdjustor());
 		
@@ -146,6 +153,51 @@ public class Gypsum extends JFrame {
 	public void paint(Graphics g) {
 		super.paint(g);
 	}
+	
+	// -- APPLICATION-WIDE CONVENIENCE METHODS & CLASSES -- //
+	
+	public class fsWindowProperties {
+		int x, y, width, height;
+		
+		fsWindowProperties() {
+			try {
+				// figure out how many logical display devices there are
+				if (GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices().length == 1) {
+					// if there's just one, fullscreening is easy (this is for development)
+					GraphicsDevice mainDisplay = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[0];
+					width = mainDisplay.getDisplayMode().getWidth();
+					height = mainDisplay.getDisplayMode().getHeight();
+					x = y = 0;
+				} else {
+					// if there's more than one, it gets a bit trickier
+					GraphicsDevice mainDisplay = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[0];
+					GraphicsDevice projector = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[1];
+					width = projector.getDisplayMode().getWidth();
+					height = projector.getDisplayMode().getHeight();
+					
+					if ("mirrored".equals(config.getProperty("projectorMode"))) {
+						// if the projector is mirrored, it's easy again
+						x = y = 0;
+					} else if ("extendedL".equals(config.getProperty("projectorMode"))) {
+						y = mainDisplay.getDisplayMode().getHeight() - projector.getDisplayMode().getHeight();
+						if (y < 0) y = 0;
+						x = 0;
+					} else if ("extendedR".equals(config.getProperty("projectorMode"))) {
+						x = mainDisplay.getDisplayMode().getWidth();
+						y = 0;
+					} else {
+						// projector mode wasn't set
+						x = y = width = height = -1;
+					}
+				}
+			} catch (HeadlessException e) {
+				// why the hell would anyone be running this headlessly?
+				x = y = width = height = -1;
+			}
+		}
+	}
+	
+	// -- APPLE JAVA EXTENSION METHODS -- //
 	
 	public void about(ApplicationEvent e) {
 		aboutBox.setResizable(false);
@@ -212,6 +264,7 @@ public class Gypsum extends JFrame {
 		setJMenuBar (mainMenuBar);
 	}
 	
+	// -- APPLE JAVA EXTENSTION NESTED CLASSES -- //
 	
 	public class newActionClass extends AbstractAction {
 		public newActionClass(String text, KeyStroke shortcut) {
@@ -219,7 +272,10 @@ public class Gypsum extends JFrame {
 			putValue(ACCELERATOR_KEY, shortcut);
 		}
 		public void actionPerformed(ActionEvent e) {
-			System.out.println("New...");
+			if (newlect == null) {
+				newlect = new NewLecture(Gypsum.this);
+			}
+			newlect.setVisible(true);
 		}
 	}
 

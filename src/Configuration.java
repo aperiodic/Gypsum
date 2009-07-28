@@ -22,6 +22,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 	protected Gypsum app;
 	protected JPanel buttonPane, deck;
 	protected JPanel[] configCards;
+	protected JFrame calibration;
 	protected JButton cancel, previous, next;
 	protected VideoMonitor vidMon;
 	protected static int configWidth = 500;
@@ -49,7 +50,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 		
 		this.setLayout(new BoxLayout(this.getContentPane(), BoxLayout.Y_AXIS));
 		deck = new JPanel(new CardLayout());
-		configCards = new JPanel[3];
+		configCards = new JPanel[5];
 		
 		// build a pane to hold the three buttons at the bottom
 		buttonPane = new JPanel();
@@ -94,6 +95,22 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 		this.setVisible(true);
 	}
 	
+	public void startCalibration() {
+		VideoMonitor calMon = new VideoMonitor(640, 480, config);
+		Calibration newCal = new Calibration(app, this, calMon);
+	}
+	
+	public void calibrationDidComplete() {
+		panel++;
+		
+		if (configCards[panel] == null) {
+			createConfigCard(panel);
+		}
+		
+		CardLayout deckLayout = (CardLayout) deck.getLayout();
+		deckLayout.next(deck);
+	}
+	
 	public void actionPerformed(ActionEvent e) {
 		if ("next".equals(e.getActionCommand())) {
 			panel++;
@@ -102,7 +119,13 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 				previous.setEnabled(true);
 				next.setEnabled(false);
 				this.setTitle(strings.getString("configTitle"));
-			
+			} else if (panel == 4) {
+				vidMon.stop();
+				vidMon = null;
+				panel--;
+				startCalibration();
+				return;
+				
 			} else if (panel == configCards.length - 1) {
 				next.setText("Finish");
 				next.setActionCommand("finish");
@@ -146,10 +169,14 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			vidMon.stop();
 			
 			app.configurationFinished();
-				
-		} else if ("extended".equals(e.getActionCommand())) {
+			
+		} else if ("extendedL".equals(e.getActionCommand())) {
 			next.setEnabled(true);
-			config.setProperty("projectorMode", "extended");
+			config.setProperty("projectorMode", "extendedL");
+			
+		} else if ("extendedR".equals(e.getActionCommand())) {
+			next.setEnabled(true);
+			config.setProperty("projectorMode", "extendedR");
 			
 		} else if ("mirrored".equals(e.getActionCommand())) {
 			next.setEnabled(true);
@@ -192,7 +219,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 	
 	public void createConfigCard(int index) {
 		if (index == 0) {
-			// -- FIRST CONFIGURATION CARD -- //
+			// -- FIRST CONFIGURATION CARD - INTRO MESSAGE -- //
 			configCards[0] = new JPanel();
 			configCards[0].setLayout(new BoxLayout(configCards[0], BoxLayout.Y_AXIS));
 			
@@ -211,7 +238,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			deck.add(configCards[0], "introCard");
 			
 		} else if (index == 1) {
-			// -- SECOND CONFIGURATION CARD -- //
+			// -- SECOND CONFIGURATION CARD - PROJECTOR MODE -- //
 			configCards[1] = new JPanel();
 			configCards[1].setLayout(new BoxLayout(configCards[1], BoxLayout.Y_AXIS));
 			
@@ -226,10 +253,29 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			// create a horizontal box to hold the row of projector mode buttons
 			JPanel projectorButtonPane = new JPanel();
 			projectorButtonPane.setLayout(new BoxLayout(projectorButtonPane, BoxLayout.X_AXIS));
-			projectorButtonPane.setBorder(BorderFactory.createEmptyBorder(20,20,20,20));
+			projectorButtonPane.setBorder(BorderFactory.createEmptyBorder(-10,20,0,20));
 			projectorButtonPane.add(Box.createHorizontalGlue());
 			
 			// create vertical boxes for each mode button and label
+			JPanel extendedLModePanel = new JPanel();
+			extendedLModePanel.setLayout(new BoxLayout(extendedLModePanel, BoxLayout.Y_AXIS));
+			
+			java.net.URL extendedLIconURL = Gypsum.class.getResource("images/extendedLModeIcon.png");
+			ImageIcon extendedLIcon = new ImageIcon(extendedLIconURL);
+			JLabel extendedLLabel = new JLabel(extendedLIcon);
+			extendedLLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+			extendedLModePanel.add(extendedLLabel);
+			
+			JRadioButton extendedL = new JRadioButton(strings.getString("extendedLModeLabel"));
+			extendedL.setAlignmentX(Component.CENTER_ALIGNMENT);
+			extendedL.setActionCommand("extendedL");
+			extendedL.addActionListener(this);
+			
+			projectorButtonGroup.add(extendedL);
+			extendedLModePanel.add(extendedL);
+			projectorButtonPane.add(extendedLModePanel);
+			projectorButtonPane.add(Box.createHorizontalGlue());
+			
 			JPanel mirrorModePanel = new JPanel();
 			mirrorModePanel.setLayout(new BoxLayout(mirrorModePanel, BoxLayout.Y_AXIS));
 			
@@ -250,23 +296,23 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			
 			projectorButtonPane.add(Box.createHorizontalGlue());
 			
-			JPanel extendedModePanel = new JPanel();
-			extendedModePanel.setLayout(new BoxLayout(extendedModePanel, BoxLayout.Y_AXIS));
+			JPanel extendedRModePanel = new JPanel();
+			extendedRModePanel.setLayout(new BoxLayout(extendedRModePanel, BoxLayout.Y_AXIS));
 			
-			java.net.URL extendedIconURL = Gypsum.class.getResource("images/extendedModeIcon.png");
-			ImageIcon extendedIcon = new ImageIcon(extendedIconURL);
-			JLabel extendedLabel = new JLabel(extendedIcon);
-			extendedLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-			extendedModePanel.add(extendedLabel);
+			java.net.URL extendedRIconURL = Gypsum.class.getResource("images/extendedRModeIcon.png");
+			ImageIcon extendedRIcon = new ImageIcon(extendedRIconURL);
+			JLabel extendedRLabel = new JLabel(extendedRIcon);
+			extendedRLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+			extendedRModePanel.add(extendedRLabel);
 			
-			JRadioButton extended = new JRadioButton(strings.getString("extendedModeLabel"));
-			extended.setAlignmentX(Component.CENTER_ALIGNMENT);
-			extended.setActionCommand("extended");
-			extended.addActionListener(this);
+			JRadioButton extendedR = new JRadioButton(strings.getString("extendedRModeLabel"));
+			extendedR.setAlignmentX(Component.CENTER_ALIGNMENT);
+			extendedR.setActionCommand("extendedR");
+			extendedR.addActionListener(this);
 			
-			projectorButtonGroup.add(extended);
-			extendedModePanel.add(extended);
-			projectorButtonPane.add(extendedModePanel);
+			projectorButtonGroup.add(extendedR);
+			extendedRModePanel.add(extendedR);
+			projectorButtonPane.add(extendedRModePanel);
 			
 			projectorButtonPane.add(Box.createHorizontalGlue());
 			configCards[1].add(projectorButtonPane);
@@ -274,7 +320,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			deck.add(configCards[1], "projectorCard");			
 			
 		} else if (index == 2) {
-			// -- THIRD CONFIGURATION CARD -- //
+			// -- THIRD CONFIGURATION CARD - VIDEO ADJUSTMENT -- //
 			configCards[2] = new JPanel();
 			configCards[2].setLayout(new BoxLayout(configCards[2], BoxLayout.Y_AXIS));
 			
@@ -291,6 +337,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			JPanel contrastSliderPanel = new JPanel();
 			contrastSliderPanel.setLayout(new BoxLayout(contrastSliderPanel, BoxLayout.Y_AXIS));
 			JSlider contrastSlider = new JSlider(JSlider.VERTICAL, -128, 128, 0);
+			config.setProperty("contrast", "0");
 			contrastSlider.setName("contrastSlider");
 			contrastSlider.addChangeListener(this);
 			contrastSliderPanel.add(contrastSlider);
@@ -309,7 +356,8 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			
 			JPanel thresholdSliderPanel = new JPanel();
 			thresholdSliderPanel.setLayout(new BoxLayout(thresholdSliderPanel, BoxLayout.Y_AXIS));
-			JSlider thresholdSlider = new JSlider(JSlider.VERTICAL, 0, 255, 150);
+			JSlider thresholdSlider = new JSlider(JSlider.VERTICAL, 0, 255, 120);
+			config.setProperty("threshold", "120");
 			thresholdSlider.setName("thresholdSlider");
 			thresholdSlider.addChangeListener(this);
 			thresholdSlider.addMouseListener(this);
@@ -324,6 +372,23 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			configCards[2].add(videoPanel);
 			
 			deck.add(configCards[2], "imageAdjustCard");
+		} else if (index == 3) {
+			// -- FOURTH CONFIGURATION CARD - CALIBRATION MESSAGE -- //
+			configCards[3] = new JPanel();
+			configCards[3].setLayout(new BoxLayout(configCards[3], BoxLayout.Y_AXIS));
+			
+			JLabel calibrationMessage = new JLabel(strings.getString("calibrationMessage"));
+			calibrationMessage.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+			calibrationMessage.setAlignmentX(Component.CENTER_ALIGNMENT);
+			configCards[3].add(calibrationMessage);
+			
+			deck.add(configCards[3], "calibrationCard");
+		} else if (index == 4) {
+			// -- FIFTH CARD - FINISHED -- //
+			configCards[4] = new JPanel();
+			configCards[4].setLayout(new BoxLayout(configCards[4], BoxLayout.Y_AXIS));
+			
+			JLabel imageMessage = new JLabel(strings.getString("finishedMessage"));
 		}
 	}
 	
