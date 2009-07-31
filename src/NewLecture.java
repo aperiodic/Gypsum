@@ -18,6 +18,7 @@ public class NewLecture extends JFrame implements ActionListener {
 	protected Gypsum app;
 	private JList images;
 	private DefaultListModel model;
+	private JButton start;
 	private int from;
 	public String[] files;
 	
@@ -90,10 +91,11 @@ public class NewLecture extends JFrame implements ActionListener {
 		cancel.addActionListener(this);
 		buttonPane.add(cancel);
 		
-		JButton ok = new JButton(strings.getString("okayButton"));
-		ok.setActionCommand("ok");
-		ok.addActionListener(this);
-		buttonPane.add(ok);
+		start = new JButton(strings.getString("startButton"));
+		start.setActionCommand("start");
+		start.addActionListener(this);
+		start.setEnabled(false);
+		buttonPane.add(start);
 		
 		contentPanel.add(buttonPane);
 		
@@ -127,15 +129,20 @@ public class NewLecture extends JFrame implements ActionListener {
 			}
 			
 			files[files.length - 1] = file;
+			
+			if (files.length > 0) {
+				start.setEnabled(true);
+			}
 		}
 		
 		if ("cancel".equals(e.getActionCommand())) {
 			setVisible(false);
 		}
 		
-		if ("ok".equals(e.getActionCommand())) {
+		if ("start".equals(e.getActionCommand())) {
 			// tell the main class we have images and should
 			// start monitoring
+			//theApp.startLecture(new Lecture(files));
 		}
 	}
 }

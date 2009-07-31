@@ -35,18 +35,21 @@ public class VideoMonitor extends JPanel implements Runnable {
 	Thread t;
 	Image frame;
 	
-	protected OpenCV cv;
-	protected ArrayList rectangles;
+	private Gypsum app;
+	private RectangleManager rectManager;
 	
-	protected Properties config;
+	private OpenCV cv;
+	private ArrayList rectangles;
 	
-	protected RenderedOp srcImage, dstImage;
-	protected PerspectiveTransform perspCorrect;
-	protected AffineTransform idTransform;
-	protected AffineTransform projectorTransform;
+	private Properties config;
 	
-	protected int contrast, threshold;
-	protected boolean thresholded, shouldStop, edgeDetect, calibrated, failedCal;
+	private RenderedOp srcImage, dstImage;
+	private PerspectiveTransform perspCorrect;
+	private AffineTransform idTransform;
+	private AffineTransform projectorTransform;
+	
+	private int contrast, threshold;
+	private boolean thresholded, shouldStop, edgeDetect, calibrated, failedCal;
 	
 	VideoMonitor() {
 		super();
@@ -72,10 +75,50 @@ public class VideoMonitor extends JPanel implements Runnable {
 		WIDTH = w;
 		HEIGHT = h;
 		
+		config = cfg;
+		
+		init();
+	}
+	
+	VideoMonitor(int w, int h, Properties cfg, Gypsum theApp, RectangleManager theRectManager) {
+		super();
+		
+		WIDTH = w;
+		HEIGHT = h;
+		
+		app = theApp;
+		rectManager = theRectManager;
+		
 		init();
 		
 		contrast = java.lang.Integer.parseInt(cfg.getProperty("contrast"));
 		threshold = java.lang.Integer.parseInt(cfg.getProperty("threshold"));
+		
+		Gypsum.fsWindowProperties fswp = theApp.new fsWindowProperties();
+		
+		if (cfg.getProperty("perpTLx") != null) {
+			Point TL = new Point(java.lang.Integer.parseInt(cfg.getProperty("perspTLx")), 
+								 java.lang.Integer.parseInt(cfg.getProperty("perspTLy")));
+			Point TR = new Point(java.lang.Integer.parseInt(cfg.getProperty("perspTRx")), 
+								 java.lang.Integer.parseInt(cfg.getProperty("perspTRy")));
+			Point BR = new Point(java.lang.Integer.parseInt(cfg.getProperty("perspBRx")), 
+								 java.lang.Integer.parseInt(cfg.getProperty("perspBRy")));
+			Point BL = new Point(java.lang.Integer.parseInt(cfg.getProperty("perspBLx")), 
+								 java.lang.Integer.parseInt(cfg.getProperty("perspBLy")));
+			int sideLength = java.lang.Integer.parseInt(cfg.getProperty("perspSideLength"));
+			perspCorrect = PerspectiveTransform.getQuadToQuad(TL.x, TL.y,
+															  TL.x + sideLength, TL.y,
+															  TL.x + sideLength, TL.y + sideLength,
+															  TL.x, TL.y + sideLength,
+															  
+															  TL.x, TL.y,
+															  TR.x, TR.y,
+															  BR.x, BR.y,	
+															  BL.x, BL.y);
+			projectorTransform = AffineTransform.getTranslateInstance(-TL.x, -TL.y);
+			projectorTransform.scale(fswp.height/3.0, fswp.height/3.0);
+		}
+		
 		config = cfg;
 	}
 	
@@ -111,6 +154,10 @@ public class VideoMonitor extends JPanel implements Runnable {
 		MIN_BLOB_AREA = 100;
 	}
 	
+	public void setRects(ArrayList theRects) {
+		rectangles = theRects;
+	}
+	
 	public void paint(Graphics g) {
 		if (!calibrated) {
 			g.drawImage(frame, 0, 0, null);
@@ -130,17 +177,24 @@ public class VideoMonitor extends JPanel implements Runnable {
 		}
 		
 		
-		g.setColor(new Color(0, 255, 0));
-		for (int i = 0; i < rectangles.size(); i++) {
-			Blob rect = (Blob) rectangles.get(i);
-			g.drawRect(rect.rectangle.x, rect.rectangle.y, 
-					   rect.rectangle.width, rect.rectangle.height);
+		if (rectangles != null) {
+			g.setColor(new Color(0, 255, 0));
+			for (int i = 0; i < rectangles.size(); i++) {
+				Rect rect = (Rect) rectangles.get(i);
+				g.drawRect(rect.x, rect.y, 
+						   rect.width, rect.height);
+			}
 		}
 		
 	}
 	
 	public void run() {
 		if (shouldStop) {
+			return;
+		}
+		
+		// need to have a rectangle manager
+		if (rectManager == null) {
 			return;
 		}
 		
@@ -194,15 +248,15 @@ public class VideoMonitor extends JPanel implements Runnable {
 								
 				// find the rectangles in the image
 				Blob[] blobs = cv.blobs(200, WIDTH*HEIGHT/2, 100, true, OpenCV.MAX_VERTICES*4);
-				rectangles = findRectangles(blobs);
+				ArrayList rawRects = findRectangles(blobs);
 				ArrayList report = new ArrayList();
 				
-				for (int i = 0; i < rectangles.size(); i++) {
-					Blob rectBlob = (Blob) rectangles.get(i);
+				for (int i = 0; i < rawRects.size(); i++) {
+					Blob rectBlob = (Blob) rawRects.get(i);
 					report.add(new Rect(rectBlob.rectangle));
 				}
 				
-				//rectManager.report(report);
+				rectManager.report(report);
 				
 				repaint();
 			} catch (InterruptedException e) {;}
@@ -210,7 +264,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 	}
 	
 	public void perspectiveCorrect(Gypsum.fsWindowProperties fswp) {
-		// get the image, find the red blobs, create
+		// get the image, find the yellow blobs, create
 		// a perspective transform matrix that maps
 		// the rectangle defined by the red blobs to
 		// a square

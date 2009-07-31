@@ -13,10 +13,9 @@ import java.awt.Image;
 public class Rect {
 	public Rectangle rectangle;
 	public Date	lastObserved;
-	public Image label;
-	public int x, y, width, height;
+	public int x, y, width, height, label;
 	
-	public Rect (Rectangle rect, Image lab) {
+	public Rect (Rectangle rect, int lab) {
 		rectangle = rect;
 		lastObserved = new Date();
 		label = lab;
