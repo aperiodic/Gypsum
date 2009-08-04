@@ -128,7 +128,7 @@ public class NewLecture extends JFrame implements ActionListener {
 				files[i] = oldFiles[i];
 			}
 			
-			files[files.length - 1] = file;
+			files[files.length - 1] = dir + file;
 			
 			if (files.length > 0) {
 				start.setEnabled(true);
@@ -139,10 +139,13 @@ public class NewLecture extends JFrame implements ActionListener {
 			setVisible(false);
 		}
 		
+
 		if ("start".equals(e.getActionCommand())) {
 			// tell the main class we have images and should
 			// start monitoring
-			//theApp.startLecture(new Lecture(files));
+			Lecture lect = new Lecture(files);
+			//app.startLecture(new Lecture(files));
+			setVisible(false);
 		}
 	}
 }

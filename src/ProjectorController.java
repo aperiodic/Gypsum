@@ -8,6 +8,7 @@
 
 import javax.imageio.ImageIO;
 import java.io.File;
+import java.util.ArrayList;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -19,10 +20,12 @@ public class ProjectorController extends JFrame {
 	protected Lecture lecture;
 	protected Gypsum app;
 	protected Image[] images;
+	protected ArrayList rects;
 	
-	public ProjectorController(Gypsum theApp) {
+	public ProjectorController(Lecture theLecture, Gypsum theApp) {
 		app = theApp;
-		
+		lecture = theLecture;
+		rects = new ArrayList();
 		images = new Image[6];
 		
 		for (int i = 0; i < 6; i++) {
@@ -45,14 +48,42 @@ public class ProjectorController extends JFrame {
 		setVisible(true);
 	}
 	
-	public void newRect(Rectangle r, int label) {
-		//
-	}
-	
-	public void changeLabel(Rectangle r, int label) {
-	}
-	
-	public void flushRect(Rectangle r, int label) {
+	public void paint(Graphics g) {
+		for (int i = 0; i < rects.size(); i++) {
+			Rect r = (Rect) rects.get(i);
+			if (r.label > 0) {
+				g.drawImage(images[r.label-1], r.x, r.y, r.width, r.height, this);
+			}
+		}
 		
+	}
+	
+	public void newRect(Rect nr) {
+		rects.add(nr);
+		repaint();
+	}
+	
+	public void changeLabel(Rect cr) {
+		for (int i = 0; i < rects.size(); i++) {
+			Rect or = (Rect) rects.get(i);
+			if (or.x == cr.x && or.y == cr.y) {
+				or.label = cr.label;
+				break;
+			}
+		}
+		
+		repaint();
+	}
+	
+	public void removeRect(Rect r) {
+		for (int i = 0; i < rects.size(); i++) {
+			Rect or = (Rect) rects.get(i);
+			if (or.x == r.x && or.y == r.y) {
+				rects.remove(i);
+				break;
+			}
+		}
+		
+		repaint();
 	}
 }

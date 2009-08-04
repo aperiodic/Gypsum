@@ -10,6 +10,7 @@ public class Lecture {
 	public String[] images;
 	
 	public Lecture (String[] theImages) {
+		images = new String[6];
 		for (int i = 0; i < theImages.length; i++) {
 			images[i] = theImages[i];
 		}

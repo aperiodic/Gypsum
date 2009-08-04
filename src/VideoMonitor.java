@@ -178,11 +178,17 @@ public class VideoMonitor extends JPanel implements Runnable {
 		
 		
 		if (rectangles != null) {
-			g.setColor(new Color(0, 255, 0));
 			for (int i = 0; i < rectangles.size(); i++) {
 				Rect rect = (Rect) rectangles.get(i);
+				
+				g.setColor(new Color(0, 255, 0));
 				g.drawRect(rect.x, rect.y, 
 						   rect.width, rect.height);
+				
+				g.setColor(new Color(0, 0, 255));
+				for (int j = 0; j < rect.label; j++) {
+					g.drawRect(rect.x + (10*j), rect.y-15, 10, 10);
+				}
 			}
 		}
 		
@@ -254,6 +260,14 @@ public class VideoMonitor extends JPanel implements Runnable {
 				for (int i = 0; i < rawRects.size(); i++) {
 					Blob rectBlob = (Blob) rawRects.get(i);
 					report.add(new Rect(rectBlob.rectangle));
+				}
+				
+				findLabels(report);
+				
+				
+				// transform each rect into screen coordinates
+				if (perspCorrect != null && projectorTransform != null) {
+					
 				}
 				
 				rectManager.report(report);
@@ -371,8 +385,6 @@ public class VideoMonitor extends JPanel implements Runnable {
 		// into projector coordinates
 	}
 	
-	// This method returns a buffered image with the contents of an image
-	
 	private ArrayList findRectangles(Blob[] blobs) {
 		ArrayList rects = new ArrayList();
 		
@@ -454,6 +466,98 @@ public class VideoMonitor extends JPanel implements Runnable {
 	private int quadArea(Point a, Point b, Point c, Point d) {
 		return Math.abs( (c.x - a.x)*(d.y - b.y) - (d.x - b.x)*(c.y - a.y) )/2;
 	}
+	
+	private void findLabels(ArrayList theRects) {
+		Blob[] lablobs = cv.blobs(100, 6000, 100, true, OpenCV.MAX_VERTICES*4);
+		
+		for (int i = 0; i < theRects.size(); i++) {
+			Rect r = (Rect) theRects.get(i);
+			int minX = r.rectangle.x; int maxX = r.rectangle.x + r.rectangle.width;
+			int minY = r.rectangle.y - (r.rectangle.height*3)/4; int maxY = r.rectangle.y;
+			
+			ArrayList candidateBlobs = new ArrayList();
+			
+			for (int j = 0; j < lablobs.length; j++) {
+				
+				if (lablobs[j].rectangle.x < minX || 
+					lablobs[j].rectangle.x + lablobs[j].rectangle.width > maxX) {
+					continue;
+				}
+				
+				if (lablobs[j].rectangle.y < minY ||
+					lablobs[j].rectangle.y + lablobs[j].rectangle.height > maxY) {
+					continue;
+				}
+				
+				candidateBlobs.add(lablobs[j]);
+			}
+			
+			if (candidateBlobs.size() == 0 || candidateBlobs.size() == 1) {
+				r.label = 0;
+			} else {
+				// first find the biggest blob
+				int maxSize = 0; int maxSizeIndex = 0;
+				for (int j = 0; j < candidateBlobs.size(); j++) {
+					Blob b = (Blob) candidateBlobs.get(i);
+					int blobSize = b.rectangle.width * b.rectangle.height;
+					if (blobSize > maxSize) {
+						maxSize = blobSize;
+						maxSizeIndex = j;
+					}
+				}
+				
+				// now see how many blobs are contained in that one
+				Blob biggest = (Blob) candidateBlobs.get(maxSizeIndex);
+				int biggestContains = 0;
+				
+				for (int j = 0; j < candidateBlobs.size(); j++) {
+					if (j == maxSizeIndex) continue;
+					
+					Blob b = (Blob) candidateBlobs.get(j);
+					if (doContain(biggest.rectangle, b.rectangle)) {
+						biggestContains++;
+					}
+				}
+				
+				r.label = biggestContains;
+			}
+		}
+	}
+	
+	private boolean doContain(Rectangle rectA, Rectangle rectB) {
+		int A1 = rectA.x; int A2 = rectA.x + rectA.width;
+		int B1 = rectB.x; int B2 = rectB.x + rectB.width;
+		int A3 = rectA.y; int A4 = rectA.y + rectA.height;
+		int B3 = rectB.y; int B4 = rectB.y + rectB.height;
+		
+		// if A is contained in B...
+		if (A1 > B1 && A2 < B2 && A3 > B3 && A4 < B4) {
+			return true;
+		}
+		
+		// if B is contained in A...
+		if (B1 > A1 && B2 < A2 && B3 > A3 && B4 < A4) {
+			return true;
+		}
+		
+		return false;
+	}
+	
+	/*private void convertRectsToScreenCoords(ArrayList theRects) {
+		for (int i = 0; i < theRects.size(); i++) {
+			Rect r = (Rect) theRects.get(i);
+			Point oTL, oTR, oBR, oBL, nTL, nTR, nBR, nBL;
+			oTL = r.rectangle.getLocation();
+			oTR = new Point(oTL.x + r.width, oTL.y);
+			oBR = new Point(oTR.x, oTL.y + r.height);
+			oBL = new Point(oTL.x, oBR.y);
+			
+			projectorTransform.transform(oTL, nTL);
+			projectorTransform.transform(oTR, nTR);
+			projectorTransform.transform(oBR, nBR);
+			projectorTransform.transform(oBL, nBL);
+		}
+	}*/
 	
 	public void setContrast(int newContrast) {
 		contrast = newContrast;

@@ -29,6 +29,7 @@ public class Gypsum extends JFrame {
 	protected Configuration configurate;
 	protected NewLecture newlect;
 	protected RectangleManager rectManager;
+	protected ProjectorController projector;
 	private Application fApplication = Application.getApplication();
 	protected Action newAction, openAction, closeAction, saveAction, saveAsAction,
 					 undoAction, cutAction, copyAction, pasteAction, clearAction, selectAllAction;
@@ -77,12 +78,13 @@ public class Gypsum extends JFrame {
 			// couldn't find or create the config file
 		} else {
 			dummyConfig();
-			rectManager = new RectangleManager();
+			/*rectManager = new RectangleManager();
+			projector = new ProjectorController(this);
 			VideoMonitor vidmon = new VideoMonitor(640, 480, config, this, rectManager);
 			this.add(vidmon);
 			rectManager.setVideoMonitor(vidmon);
 			setSize(640, 480);
-			setVisible(true);
+			setVisible(true);*/
 			
 			//if (!config.getProperty("configured").equals("yes")) {
 			//	configure();
@@ -91,7 +93,7 @@ public class Gypsum extends JFrame {
 				//monitor();
 			//}
 		}
-		//setVisible(true);
+		setVisible(true);
 	}
 
 	// attempt to load the configuration file
@@ -160,7 +162,13 @@ public class Gypsum extends JFrame {
 	}
 	
 	public void startLecture(Lecture theLecture) {
-		
+		projector = new ProjectorController(theLecture, this);
+		rectManager = new RectangleManager(projector);
+		VideoMonitor vidmon = new VideoMonitor(640, 480, config, this, rectManager);
+		this.add(vidmon);
+		rectManager.setVideoMonitor(vidmon);
+		setSize(640, 480);
+		setVisible(true);
 	}
 	
 	private void dummyConfig() {

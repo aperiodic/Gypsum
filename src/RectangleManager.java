@@ -12,16 +12,17 @@ import java.util.Date;
 public class RectangleManager {
 	public ArrayList rects;
 	private VideoMonitor vidmon;
+	private ProjectorController projector;
 	
-	public RectangleManager() {
+	public RectangleManager(ProjectorController theProjector) {
 		rects = new ArrayList();
+		projector = theProjector;
 	}
 	
 	public void report(ArrayList foundRects) {
 		// first, get rid of old rectangles which haven't been
 		// seen in over a second
 		flushOldRects();
-		
 		
 		// get rid of all the rectangles in the report which overlap
 		for (int i = 0; i < foundRects.size(); i++) {
@@ -43,11 +44,8 @@ public class RectangleManager {
 			}
 		}
 		
-		//System.out.println("found " + foundRects.size() + " non-overlapping rects in report");
-		
 		// find all of the reported rectangles which do not
 		// overlap known rectangles
-		
 		for (int i = 0; i < rects.size(); i++) {
 			Rect kr = (Rect) rects.get(i);
 			
@@ -55,6 +53,10 @@ public class RectangleManager {
 				Rect fr = (Rect) foundRects.get(j);
 				
 				if (doOverlap(fr, kr)) {
+					if (fr.label != kr.label) {
+						// notify projector controller of label change
+					}
+					
 					foundRects.remove(j);
 					j--;
 					kr.lastObserved = new Date();
@@ -62,21 +64,27 @@ public class RectangleManager {
 			}
 		}
 		
-		rects.addAll(foundRects);
+		// for each new rect, notify the projector controller
+		for (int i = 0; i < foundRects.size(); i++) {
+			Rect nr = (Rect) foundRects.get(i);
+			projector.newRect(nr);
+			rects.add(nr);
+		}
 		
 		if (vidmon != null) {
 			vidmon.setRects(rects);
 		}
 	}
 	
-	// get rid of rectangles that haven't been seen in over a second
+	// get rid of rectangles that haven't been seen in over 5 seconds
 	private void flushOldRects() {
 		long now = new Date().getTime();
 		
 		for (int i = 0; i < rects.size(); i++) {
 			Rect r = (Rect) rects.get(i);
 			long lastSeen = r.lastObserved.getTime();
-			if (now - lastSeen > 1000) {
+			if (now - lastSeen > 5000) {
+				projector.removeRect(r);
 				rects.remove(i);
 				i--;
 			}
