@@ -45,7 +45,7 @@ public class Calibration extends JFrame {
 			int partitions = 3;
 			int unit = fswp.height/partitions;
 			int leftMargin = unit + (fswp.width-fswp.height)/2;
-			int rectWidth = 50;
+			int rectWidth = 24;
 			
 			g.fillRect(leftMargin - rectWidth/2, unit - rectWidth/2, 
 					   rectWidth, rectWidth);
