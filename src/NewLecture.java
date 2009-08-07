@@ -170,9 +170,8 @@ public class NewLecture extends JFrame implements ActionListener {
 		if ("start".equals(e.getActionCommand())) {
 			// tell the main class we have images and should
 			// start monitoring
-			Lecture lect = new Lecture(files);
-			app.startLecture(new Lecture(files));
 			setVisible(false);
+			app.startLecture(new Lecture(files));
 		}
 	}
 }

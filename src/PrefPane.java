@@ -15,7 +15,7 @@ public class PrefPane extends JFrame {
 		super();
 
         this.getContentPane().setLayout(new BorderLayout(10, 10));
-        prefsText = new JLabel ("Gypsum Preferences...");
+        prefsText = new JLabel ("Preferences");
         JPanel textPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
         textPanel.add(prefsText);
         this.getContentPane().add (textPanel, BorderLayout.NORTH);

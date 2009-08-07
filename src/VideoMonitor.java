@@ -59,6 +59,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 		HEIGHT = 240;
 		
 		rectManager = new RectangleManager(this);
+		calibrated = false;
 		
 		init();
 	}
@@ -70,6 +71,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 		HEIGHT = h;
 		
 		rectManager = new RectangleManager(this);
+		calibrated = false;
 		
 		init();
 	}
@@ -82,6 +84,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 		
 		rectManager = new RectangleManager(this);
 		config = cfg;
+		calibrated = false;
 		
 		init();
 	}
@@ -143,6 +146,8 @@ public class VideoMonitor extends JPanel implements Runnable {
 			vidScale = AffineTransform.getScaleInstance(videoScale, videoScale);
 			perspCorrect.concatenate(vidTranslate);
 			perspCorrect.concatenate(vidScale);
+			
+			calibrated = true;
 		}
 		
 		config = cfg;
@@ -181,30 +186,26 @@ public class VideoMonitor extends JPanel implements Runnable {
 	}
 	
 	public void setRects(ArrayList someRects) {
-		convertRectsToVideoCoords(someRects);
-		rectangles = theRects;
-		int theSize = someRects.size();
-		int foo = 3;
+		rectangles = new ArrayList();
+		
+		// copy the new rects over to the video monitor's
+		// rectangles list, so we can transform them back
+		// to video coordinates without interfering with
+		// the rectangle manager.
+		for (int i = 0; i < someRects.size(); i++) {
+			Rect sr = (Rect) someRects.get(i);
+			Rect nr = new Rect(new Rectangle(sr.rectangle), sr.label);
+			rectangles.add(nr);
+		}
+		
+		if (calibrated) {
+			convertRectsToVideoCoords(rectangles);
+		}
 	}
 	
 	public void paint(Graphics g) {
-		if (!calibrated) {
-			g.drawImage(frame, 0, 0, null);
-		} else {
-			ParameterBlock pb = new ParameterBlock();
-			pb.addSource(srcImage);
-			try {
-				pb.add(new WarpPerspective(perspCorrect.createInverse()));
-				pb.add(Interpolation.getInstance(Interpolation.INTERP_BICUBIC));
-			} catch (Exception e) {
-				// after calibration, all perspective correction transforms
-				// will be invertible, so ignore the error
-			}
-			
-			dstImage = JAI.create("warp", pb, null);
-			((Graphics2D)g).drawRenderedImage(dstImage, idTransform);
-		}
 		
+		g.drawImage(frame, 0, 0, null);
 		
 		if (rectangles != null) {
 			for (int i = 0; i < rectangles.size(); i++) {
@@ -301,8 +302,8 @@ public class VideoMonitor extends JPanel implements Runnable {
 				findLabels(report);
 				
 				
-				// transform each rect into screen coordinates
-				if (perspCorrect != null) {
+				// if calibrated, transform each rect into screen coordinates
+				if (calibrated) {
 					convertRectsToScreenCoords(report);
 				}
 				
@@ -620,13 +621,13 @@ public class VideoMonitor extends JPanel implements Runnable {
 	private void convertRectsToVideoCoords(ArrayList theRects) {
 		for (int i = 0; i < theRects.size(); i++) {
 			Rect r = (Rect) theRects.get(i);
-			Point origin, dim;
+			Point origin, botright;
 			origin = r.rectangle.getLocation();
 			botright = new Point(r.x + r.width, r.y + r.height);
 			
 			try {
-				perspCorrect.transform(origin, origin);
-				perspCorrect.transform(botright, botright);
+				perspCorrect.inverseTransform(origin, origin);
+				perspCorrect.inverseTransform(botright, botright);
 			} catch (java.awt.geom.NoninvertibleTransformException e) {}
 			
 			r.rectangle = new Rectangle(origin.x, origin.y, botright.x-origin.x, botright.y-origin.y);
