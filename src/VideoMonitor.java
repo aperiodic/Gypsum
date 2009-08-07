@@ -183,6 +183,8 @@ public class VideoMonitor extends JPanel implements Runnable {
 	public void setRects(ArrayList someRects) {
 		convertRectsToVideoCoords(someRects);
 		rectangles = theRects;
+		int theSize = someRects.size();
+		int foo = 3;
 	}
 	
 	public void paint(Graphics g) {
@@ -602,16 +604,16 @@ public class VideoMonitor extends JPanel implements Runnable {
 	private void convertRectsToScreenCoords(ArrayList theRects) {
 		for (int i = 0; i < theRects.size(); i++) {
 			Rect r = (Rect) theRects.get(i);
-			Point origin, dim;
+			Point origin, botright;
 			origin = r.rectangle.getLocation();
-			dim = new Point(r.rectangle.width, r.rectangle.height);
+			botright = new Point(r.x + r.width, r.y + r.height);
 			
 			perspCorrect.transform(origin, origin);
-			perspCorrect.transform(dim, dim);
+			perspCorrect.transform(botright, botright);
 			
-			r.rectangle = new Rectangle(origin.x, origin.y, dim.x, dim.y);
+			r.rectangle = new Rectangle(origin.x, origin.y, botright.x-origin.x, botright.y-origin.y);
 			r.x = origin.x; r.y = origin.y;
-			r.width = dim.x; r.height = dim.y;
+			r.width = r.rectangle.width; r.height = r.rectangle.height;
 		}
 	}
 	
@@ -620,16 +622,16 @@ public class VideoMonitor extends JPanel implements Runnable {
 			Rect r = (Rect) theRects.get(i);
 			Point origin, dim;
 			origin = r.rectangle.getLocation();
-			dim = new Point(r.rectangle.width, r.rectangle.height);
+			botright = new Point(r.x + r.width, r.y + r.height);
 			
 			try {
-				perspCorrect.inverseTransform(origin, origin);
-				perspCorrect.inverseTransform(dim, dim);
+				perspCorrect.transform(origin, origin);
+				perspCorrect.transform(botright, botright);
 			} catch (java.awt.geom.NoninvertibleTransformException e) {}
 			
-			r.rectangle = new Rectangle(origin.x, origin.y, dim.x, dim.y);
+			r.rectangle = new Rectangle(origin.x, origin.y, botright.x-origin.x, botright.y-origin.y);
 			r.x = origin.x; r.y = origin.y;
-			r.width = dim.x; r.height = dim.y;
+			r.width = r.rectangle.width; r.height = r.rectangle.height;
 		}
 	}
 	
