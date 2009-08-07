@@ -77,14 +77,6 @@ public class Gypsum extends JFrame {
 		if(!loadConfiguration()) {
 			// couldn't find or create the config file
 		} else {
-			//dummyConfig();
-			/*rectManager = new RectangleManager();
-			projector = new ProjectorController(this);
-			VideoMonitor vidmon = new VideoMonitor(640, 480, config, this, rectManager);
-			this.add(vidmon);
-			rectManager.setVideoMonitor(vidmon);
-			setSize(640, 480);
-			setVisible(true);*/
 			
 			if (!config.getProperty("configured").equals("yes")) {
 				configure();
@@ -167,7 +159,8 @@ public class Gypsum extends JFrame {
 		projector = new ProjectorController(theLecture, this);
 		rectManager = new RectangleManager(projector);
 		VideoMonitor vidmon = new VideoMonitor(640, 480, config, this, rectManager);
-		this.add(vidmon);
+		vidmon.setThresholded(true);
+		add(vidmon);
 		rectManager.setVideoMonitor(vidmon);
 		setSize(640, 480);
 		setVisible(true);
@@ -296,7 +289,7 @@ public class Gypsum extends JFrame {
 		editMenu.add(new JMenuItem(selectAllAction));
 		mainMenuBar.add(editMenu);
 		
-		setJMenuBar (mainMenuBar);
+		setJMenuBar(mainMenuBar);
 	}
 	
 	// -- APPLE JAVA EXTENSTION NESTED CLASSES -- //
