@@ -42,6 +42,7 @@ public class ProjectorController extends JFrame {
 		
 		Gypsum.fsWindowProperties fswp = app.new fsWindowProperties();
 		
+		setUndecorated(true);
 		setLocation(fswp.x, fswp.y);
 		setSize(fswp.width, fswp.height);
 		setResizable(false);

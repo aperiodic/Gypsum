@@ -12,13 +12,14 @@ import java.awt.Image;
 
 public class Rect {
 	public Rectangle rectangle;
-	public long	lastObserved, firstObserved;
+	public long	lastObserved, firstObserved, labelObserved;
 	public int x, y, width, height, label;
 	
 	public Rect (Rectangle rect, int lab) {
 		rectangle = rect;
 		firstObserved = new Date().getTime();
 		lastObserved = new Date().getTime();
+		labelObserved = new Date().getTime();
 		label = lab;
 		x = rect.x;
 		y = rect.y;
@@ -30,6 +31,8 @@ public class Rect {
 		rectangle = rect;
 		firstObserved = new Date().getTime();
 		lastObserved = new Date().getTime();
+		// set the label change time to 0, so adding the first label is instant
+		labelObserved = 0; // the dawn of time!
 		x = rect.x;
 		y = rect.y;
 		width = rect.width;

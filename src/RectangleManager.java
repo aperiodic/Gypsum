@@ -94,15 +94,43 @@ public class RectangleManager {
 			for (int j = 0; j < foundRects.size(); j++) {
 				Rect fr = (Rect) foundRects.get(j);
 				
+				long now = new Date().getTime();
+				
+				// if it overlaps, we assume it's the same rectangle
+				// a bit naive, perhaps, but the camera shouldn't move,
+				// it makes a ton of stuff much easier & more robust,
+				// and i can't think of any reason why someone would want
+				// to overlap projected images
 				if (GeomUtils.doOverlap(fr, kr)) {
+					
+					// the label is different, so see if this is indecision
+					// or a real label change
 					if (fr.label != kr.label) {
-						kr.label = fr.label;
-						
-						if (projecting) {
-							projector.changeLabel(fr);
+						// if it doesn't have a label, go ahead and add it
+						if (kr.label == 0) {
+							kr.label = fr.label;
+							kr.labelObserved = now;
+							if (projecting) {
+								projector.changeLabel(kr);
+							}
+						} else {
+							// if it does have a label, make sure that
+							// label hasn't been seen for 1/4 of a second
+							if (now - kr.labelObserved > 250) {
+								kr.label = fr.label;
+								kr.labelObserved = now;
+								if (projecting) {
+									projector.changeLabel(kr);
+								}
+							}
 						}
+						
+					} else {
+						// if the label is the same, update the labelObserved
+						// time of the rect to reflect this
+						kr.labelObserved = now;
 					}
-					kr.lastObserved = new Date().getTime();
+					kr.lastObserved = now;
 					
 					foundRects.remove(j);
 					j--;
