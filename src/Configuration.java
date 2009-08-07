@@ -275,6 +275,9 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 	public void mouseClicked(MouseEvent e) {}
 	public void mouseMoved(MouseEvent e) {}
 	
+	// -- A METRIC ASSLOAD OF BORING SWING CODE TO LAY OUT EACH CONFIGURATION CARD -- //
+	// man do i hate swing
+	
 	public void createConfigCard(int index) {
 		if (index == 0) {
 			// -- FIRST CONFIGURATION CARD - INTRO MESSAGE -- //
