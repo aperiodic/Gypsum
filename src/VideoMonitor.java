@@ -46,7 +46,8 @@ public class VideoMonitor extends JPanel implements Runnable {
 	private RenderedOp srcImage, dstImage;
 	private PerspectiveTransform perspCorrect;
 	private AffineTransform idTransform;
-	private AffineTransform projectorTransform;
+	private AffineTransform vidTranslate, vidScale;
+	private Point[] calPoints;
 	
 	private int contrast, threshold;
 	private boolean thresholded, shouldStop, edgeDetect, calibrated, failedCal;
@@ -57,6 +58,8 @@ public class VideoMonitor extends JPanel implements Runnable {
 		WIDTH = 320;
 		HEIGHT = 240;
 		
+		rectManager = new RectangleManager(this);
+		
 		init();
 	}
 	
@@ -65,6 +68,8 @@ public class VideoMonitor extends JPanel implements Runnable {
 		
 		WIDTH = w;
 		HEIGHT = h;
+		
+		rectManager = new RectangleManager(this);
 		
 		init();
 	}
@@ -75,6 +80,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 		WIDTH = w;
 		HEIGHT = h;
 		
+		rectManager = new RectangleManager(this);
 		config = cfg;
 		
 		init();
@@ -96,7 +102,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 		
 		Gypsum.fsWindowProperties fswp = theApp.new fsWindowProperties();
 		
-		if (cfg.getProperty("perpTLx") != null) {
+		if (cfg.getProperty("perspTLx") != null) {
 			Point TL = new Point(java.lang.Integer.parseInt(cfg.getProperty("perspTLx")), 
 								 java.lang.Integer.parseInt(cfg.getProperty("perspTLy")));
 			Point TR = new Point(java.lang.Integer.parseInt(cfg.getProperty("perspTRx")), 
@@ -106,6 +112,10 @@ public class VideoMonitor extends JPanel implements Runnable {
 			Point BL = new Point(java.lang.Integer.parseInt(cfg.getProperty("perspBLx")), 
 								 java.lang.Integer.parseInt(cfg.getProperty("perspBLy")));
 			int sideLength = java.lang.Integer.parseInt(cfg.getProperty("perspSideLength"));
+			
+			// create a perspective transform that maps a square to the found quadrilateral
+			// the inverse of this transform will be used to correct the perspective distortion
+			// on the video input
 			perspCorrect = PerspectiveTransform.getQuadToQuad(TL.x, TL.y,
 															  TL.x + sideLength, TL.y,
 															  TL.x + sideLength, TL.y + sideLength,
@@ -115,8 +125,24 @@ public class VideoMonitor extends JPanel implements Runnable {
 															  TR.x, TR.y,
 															  BR.x, BR.y,	
 															  BL.x, BL.y);
-			projectorTransform = AffineTransform.getTranslateInstance(-TL.x, -TL.y);
-			projectorTransform.scale(fswp.height/3.0, fswp.height/3.0);
+			
+			// create an affine transform that will translate & scale the
+			// perspective corrected points into projector coordinates
+			double videoScale = (fswp.height/3.0)/(double)sideLength;
+			double projectorScale = (float)sideLength/(fswp.height/3.0);
+			
+			int widthMargin = (fswp.width - fswp.height)/2;
+			double vidWidthMargin = widthMargin * projectorScale;
+			
+			Point projectorOrigin = new Point();
+			projectorOrigin.setLocation(TL.x - sideLength - vidWidthMargin, 
+										(double)TL.y - sideLength);
+			
+			vidTranslate = AffineTransform.getTranslateInstance(-projectorOrigin.x,
+																-projectorOrigin.y);
+			vidScale = AffineTransform.getScaleInstance(videoScale, videoScale);
+			perspCorrect.concatenate(vidTranslate);
+			perspCorrect.concatenate(vidScale);
 		}
 		
 		config = cfg;
@@ -154,7 +180,8 @@ public class VideoMonitor extends JPanel implements Runnable {
 		MIN_BLOB_AREA = 100;
 	}
 	
-	public void setRects(ArrayList theRects) {
+	public void setRects(ArrayList someRects) {
+		convertRectsToVideoCoords(someRects);
 		rectangles = theRects;
 	}
 	
@@ -187,8 +214,23 @@ public class VideoMonitor extends JPanel implements Runnable {
 				
 				g.setColor(new Color(0, 0, 255));
 				for (int j = 0; j < rect.label; j++) {
-					g.drawRect(rect.x + (10*j), rect.y-15, 10, 10);
+					g.fillRect(rect.x + (10*j), rect.y-15, 10, 10);
 				}
+			}
+		}
+		
+		if (calPoints != null) {
+			g.setColor(new Color(255, 255, 0));
+			for (int i = 0; i < calPoints.length; i++) {
+				if (calPoints[i] == null) break;
+				
+				g.fillRect(calPoints[i].x - 2, calPoints[i].y - 2, 4, 4);
+				
+				int next = (i+1) % calPoints.length;
+				if (calPoints[next] == null) break;
+				
+				g.drawLine(calPoints[i].x, calPoints[i].y, 
+						   calPoints[next].x, calPoints[next].y);
 			}
 		}
 		
@@ -212,15 +254,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 					return;
 				}
 				
-				if (failedCal) {
-					return;
-				}
-				
 				cv.read();
-				
-				if (calibrated) {
-					int foo = 3;
-				}
 				
 				// convert the image to greyscale, apply contrast
 				// and threshold filters
@@ -253,7 +287,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 				}
 								
 				// find the rectangles in the image
-				Blob[] blobs = cv.blobs(200, WIDTH*HEIGHT/2, 100, true, OpenCV.MAX_VERTICES*4);
+				Blob[] blobs = cv.blobs(100, WIDTH*HEIGHT/2, 100, true, OpenCV.MAX_VERTICES*4);
 				ArrayList rawRects = findRectangles(blobs);
 				ArrayList report = new ArrayList();
 				
@@ -266,8 +300,8 @@ public class VideoMonitor extends JPanel implements Runnable {
 				
 				
 				// transform each rect into screen coordinates
-				if (perspCorrect != null && projectorTransform != null) {
-					
+				if (perspCorrect != null) {
+					convertRectsToScreenCoords(report);
 				}
 				
 				rectManager.report(report);
@@ -276,117 +310,162 @@ public class VideoMonitor extends JPanel implements Runnable {
 			} catch (InterruptedException e) {;}
 		}
 	}
-	
-	public void perspectiveCorrect(Gypsum.fsWindowProperties fswp) {
-		// get the image, find the yellow blobs, create
-		// a perspective transform matrix that maps
-		// the rectangle defined by the red blobs to
-		// a square
-		cv.read();
 		
-		cv.contrast(contrast);
-		
-		MemoryImageSource mis = new MemoryImageSource(cv.width, cv.height, cv.pixels(), 0, cv.width);
-		Raster pixels = toBufferedImage(createImage(mis)).getData();
-		
-		cv.convert(OpenCV.GRAY);
-		cv.threshold(threshold);
-		
-		MemoryImageSource smis = new MemoryImageSource(cv.width, cv.height, cv.pixels(), 0, cv.width);
-		frame = createImage(smis);
-		
-		// find the small blobs in the image
-		Blob[] blobs = cv.blobs(80, 1500, 100, true, OpenCV.MAX_VERTICES*4);
-		ArrayList yellowBlobs = new ArrayList();
-		
-		int numBlobs = blobs.length;
-		
-		// find the yellow blobs
-		for (int i = 0; i < blobs.length; i++) {
-			int[] blobSamples = new int[3];
-			pixels.getPixel(blobs[i].centroid.x, blobs[i].centroid.y, blobSamples);
-			int r = blobSamples[0];
-			int g = blobSamples[1];
-			int b = blobSamples[2];
-			float yellowness = ((float) r + g) / ((float) r + g + b);
-			
-			if(yellowness > 0.75 && (r + g + b) > 200) {
-				
-				
-				yellowBlobs.add(blobs[i]);
-			}
-		}
-		
-		if(yellowBlobs.size() != 4) {
-			System.err.println("wrong amount of perspective transform calibration points, found " + yellowBlobs.size());
-			failedCal = true;
-		} else {
-			Point TL, TR, BL, BR;
-			TL = TR = BL = BR = new Point(0, 0);
-			int mTL = cv.height+cv.width; int mTR = cv.height; 
-			int mBL = -cv.width; int mBR = 0;
-			
-			for (int i = 0; i < yellowBlobs.size(); i++) {
-				Blob b = (Blob) yellowBlobs.get(i);
-				
-				// figure out the blob's y+x and y-x "altitude"
-				int YpX = b.centroid.y + b.centroid.x;
-				int YmX = b.centroid.y - b.centroid.x;
-				
-				// see if either altitude is an extrema, and
-				// update the values accordingly
-				if (YpX < mTL) TL = b.centroid;
-				if (YpX > mBR) BR = b.centroid;
-				if (YmX < mTR) TR = b.centroid;
-				if (YmX > mBL) BL = b.centroid;
-			}
-			
-			int leftSideLength = BL.y - TL.y;
-			int rightSideLength = BR.y - TR.y;
-			int sideLength = (leftSideLength > rightSideLength) ? leftSideLength : rightSideLength;
-			
-			// create a perspective transform that maps a square to the found quadrilateral
-			// the inverse of this transform will be used to correct the perspective distortion
-			// on the video input
-			perspCorrect = PerspectiveTransform.getQuadToQuad(TL.x, TL.y,
-															  TL.x + sideLength, TL.y,
-															  TL.x + sideLength, TL.y + sideLength,
-															  TL.x, TL.y + sideLength,
-															  
-															  TL.x, TL.y,
-															  TR.x, TR.y,
-															  BR.x, BR.y,	
-															  BL.x, BL.y);
-			
-			// create an affine transform that will map points in an image that has been corrected
-			// by the above transform to projector coordinates
-			projectorTransform = AffineTransform.getTranslateInstance(-TL.x, -TL.y);
-			projectorTransform.scale(fswp.height/3.0, fswp.height/3.0);
-			
-			// save the perspective transform parameters in the config object
-			config.setProperty("perspTLx", "" + TL.x); config.setProperty("perspTLy", "" + TL.y);
-			config.setProperty("perspTRx", "" + TR.x); config.setProperty("perspTRy", "" + TR.y);
-			config.setProperty("perspBRx", "" + BR.x); config.setProperty("perspBRy", "" + BR.y);
-			config.setProperty("perspBLx", "" + BL.x); config.setProperty("perspBLy", "" + BL.y);
-			config.setProperty("perspSideLength", "" + sideLength);
-			
-			
-			calibrated = true;
-		}
-		
+	public void setCalPoints(Point[] theCalPoints) {
+		calPoints = theCalPoints;
 	}
 	
-	public void findProjectorRange() {
-		// find out how far above & below the projected
-		// colored lines the board boundary is, and
-		// normalize that to figure out how much of
-		// the board the projector can project on to
-		// also create a function to map camera coordinates
-		// into projector coordinates
+	public void calibrate(Properties theConfig, Gypsum.fsWindowProperties fswp) {
+		// first, scale all the points by 2, since it will be used to
+		// correct a 640x480 input, and it's being calibrated with a
+		// 320x240 input
+		for (int i = 0; i < 4; i++) {
+			calPoints[i] = new Point(calPoints[i].x*2, calPoints[i].y*2);
+		}
+		
+		// find the topleft, topright, bottomright, and bottomleft points
+		// of the calibration quad (we can't assume a consistent winding)
+		Point TL, TR, BL, BR;
+		TL = TR = BL = BR = new Point(0, 0);
+		int mTL = 640+480; int mTR = 480; 
+		int mBL = -640; int mBR = 0;
+		
+		for (int i = 0; i < 4; i++) {
+			Point p = calPoints[i];
+			
+			// figure out the blob's y+x and y-x "altitude"
+			int YpX = p.y + p.x;
+			int YmX = p.y - p.x;
+			
+			// see if either altitude is an extrema, and
+			// update the values accordingly
+			if (YpX < mTL) {
+				TL = p;
+				mTL = YpX;
+			}
+			if (YpX > mBR) {
+				BR = p;
+				mBR = YpX;
+			}
+			if (YmX < mTR) {
+				TR = p;
+				mTR = YmX;
+			}
+			if (YmX > mBL) { 
+				BL = p;
+				mBL = YmX;
+			}
+		}
+		
+		int leftSideLength = BL.y - TL.y;
+		int rightSideLength = BR.y - TR.y;
+		int sideLength = (leftSideLength > rightSideLength) ? leftSideLength : rightSideLength;
+		
+		// create a perspective transform that maps a square to the found quadrilateral
+		// the inverse of this transform will be used to correct the perspective distortion
+		// on the video input
+		perspCorrect = PerspectiveTransform.getQuadToQuad(TL.x, TL.y,
+														  TL.x + sideLength, TL.y,
+														  TL.x + sideLength, TL.y + sideLength,
+														  TL.x, TL.y + sideLength,
+														  
+														  TL.x, TL.y,
+														  TR.x, TR.y,
+														  BR.x, BR.y,	
+														  BL.x, BL.y);
+		
+		// create an affine transform that will translate & scale the
+		// perspective corrected points into projector coordinates
+		double videoScale = (fswp.height/3.0)/(double)sideLength;
+		double projectorScale = (float)sideLength/(fswp.height/3.0);
+		
+		int widthMargin = (fswp.width - fswp.height)/2;
+		double vidWidthMargin = widthMargin * projectorScale;
+		
+		Point projectorOrigin = new Point();
+		projectorOrigin.setLocation(TL.x - sideLength - vidWidthMargin, 
+									(double)TL.y - sideLength);
+		
+		vidTranslate = AffineTransform.getTranslateInstance(-projectorOrigin.x,
+															-projectorOrigin.y);
+		vidScale = AffineTransform.getScaleInstance(videoScale, videoScale);
+		perspCorrect.concatenate(vidTranslate);
+		perspCorrect.concatenate(vidScale);
+		
+		// save the perspective transform parameters in the given config
+		theConfig.setProperty("perspTLx", "" + TL.x); 
+		theConfig.setProperty("perspTLy", "" + TL.y);
+		
+		theConfig.setProperty("perspTRx", "" + TR.x); 
+		theConfig.setProperty("perspTRy", "" + TR.y);
+		
+		theConfig.setProperty("perspBRx", "" + BR.x);
+		theConfig.setProperty("perspBRy", "" + BR.y);
+		
+		theConfig.setProperty("perspBLx", "" + BL.x);
+		theConfig.setProperty("perspBLy", "" + BL.y);
+		theConfig.setProperty("perspSideLength", "" + sideLength);
+		
+		
+		calibrated = true;		
 	}
 	
 	private ArrayList findRectangles(Blob[] blobs) {
 		ArrayList rects = new ArrayList();
+		
+		ArrayList mBlobs = new ArrayList();
+		
+		// add all blobs to the mBlobs ArrayList
+		for (int i = 0; i < blobs.length; i++) {
+			mBlobs.add(blobs[i]);
+		}
+		
+		// merge "close" blobs
+		for (int i = 0; i < mBlobs.size(); i++) {
+			boolean didmerge = false;
+			Blob b = (Blob) mBlobs.get(i);
+			Rectangle br = b.rectangle;
+			br = new Rectangle(br.x - 5, br.y - 5, br.width + 10, br.height + 10);
+			
+			for (int j = 0; j < mBlobs.size(); j++) {
+				// don't compare blobs to themselves
+				if (i == j) {
+					continue;
+				}
+				
+				Blob o = (Blob) mBlobs.get(j);
+				Rectangle or = o.rectangle;
+				or = new Rectangle(or.x - 5, or.y - 5, or.width + 10, or.height + 10);
+				
+				if (GeomUtils.doOverlap(br, or) && !GeomUtils.doContain(br, or)) {
+					// create a new Point array to hold all the points of b & o
+					Point[] newPoints = new Point[b.points.length + o.points.length];
+					
+					// copy the points from b & o into the new array
+					for (int k = 0; k < b.points.length; k++) {
+						newPoints[k] = b.points[k];
+					}
+					for (int k = b.points.length; k < newPoints.length; k++) {
+						newPoints[k] = o.points[k - b.points.length];
+					}
+					
+					b.points = newPoints;
+					b.rectangle = GeomUtils.rectMerge(b.rectangle, o.rectangle);
+					
+					mBlobs.remove(j);
+					j--;
+					didmerge = true;
+				}
+			}
+			if (didmerge) i--;
+		}
+		
+		blobs = new Blob[mBlobs.size()];
+		
+		for (int i = 0; i < mBlobs.size(); i++) {
+			Blob b = (Blob) mBlobs.get(i);
+			blobs[i] = b;
+		}
 		
 		// scan through the blobs to find rects
 		for (int i = 0; i < blobs.length; i++) {
@@ -451,8 +530,8 @@ public class VideoMonitor extends JPanel implements Runnable {
 			
 			// find the difference in area between the TR-TL-BL-BR rectangle
 			// and the containing rectangle
-			int cornerRectArea = quadArea(blob.points[TLindex], blob.points[TRindex],
-										  blob.points[BRindex], blob.points[BLindex]);
+			int cornerRectArea = GeomUtils.quadArea(blob.points[TLindex], blob.points[TRindex],
+										            blob.points[BRindex], blob.points[BLindex]);
 			int areaDiff = Math.abs(containingRectArea - cornerRectArea);
 			
 			if (areaDiff / (float)containingRectArea < 0.2) {
@@ -461,10 +540,6 @@ public class VideoMonitor extends JPanel implements Runnable {
 		}
 		
 		return rects;
-	}
-	
-	private int quadArea(Point a, Point b, Point c, Point d) {
-		return Math.abs( (c.x - a.x)*(d.y - b.y) - (d.x - b.x)*(c.y - a.y) )/2;
 	}
 	
 	private void findLabels(ArrayList theRects) {
@@ -514,7 +589,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 					if (j == maxSizeIndex) continue;
 					
 					Blob b = (Blob) candidateBlobs.get(j);
-					if (doContain(biggest.rectangle, b.rectangle)) {
+					if (GeomUtils.doContain(biggest.rectangle, b.rectangle)) {
 						biggestContains++;
 					}
 				}
@@ -524,40 +599,39 @@ public class VideoMonitor extends JPanel implements Runnable {
 		}
 	}
 	
-	private boolean doContain(Rectangle rectA, Rectangle rectB) {
-		int A1 = rectA.x; int A2 = rectA.x + rectA.width;
-		int B1 = rectB.x; int B2 = rectB.x + rectB.width;
-		int A3 = rectA.y; int A4 = rectA.y + rectA.height;
-		int B3 = rectB.y; int B4 = rectB.y + rectB.height;
-		
-		// if A is contained in B...
-		if (A1 > B1 && A2 < B2 && A3 > B3 && A4 < B4) {
-			return true;
-		}
-		
-		// if B is contained in A...
-		if (B1 > A1 && B2 < A2 && B3 > A3 && B4 < A4) {
-			return true;
-		}
-		
-		return false;
-	}
-	
-	/*private void convertRectsToScreenCoords(ArrayList theRects) {
+	private void convertRectsToScreenCoords(ArrayList theRects) {
 		for (int i = 0; i < theRects.size(); i++) {
 			Rect r = (Rect) theRects.get(i);
-			Point oTL, oTR, oBR, oBL, nTL, nTR, nBR, nBL;
-			oTL = r.rectangle.getLocation();
-			oTR = new Point(oTL.x + r.width, oTL.y);
-			oBR = new Point(oTR.x, oTL.y + r.height);
-			oBL = new Point(oTL.x, oBR.y);
+			Point origin, dim;
+			origin = r.rectangle.getLocation();
+			dim = new Point(r.rectangle.width, r.rectangle.height);
 			
-			projectorTransform.transform(oTL, nTL);
-			projectorTransform.transform(oTR, nTR);
-			projectorTransform.transform(oBR, nBR);
-			projectorTransform.transform(oBL, nBL);
+			perspCorrect.transform(origin, origin);
+			perspCorrect.transform(dim, dim);
+			
+			r.rectangle = new Rectangle(origin.x, origin.y, dim.x, dim.y);
+			r.x = origin.x; r.y = origin.y;
+			r.width = dim.x; r.height = dim.y;
 		}
-	}*/
+	}
+	
+	private void convertRectsToVideoCoords(ArrayList theRects) {
+		for (int i = 0; i < theRects.size(); i++) {
+			Rect r = (Rect) theRects.get(i);
+			Point origin, dim;
+			origin = r.rectangle.getLocation();
+			dim = new Point(r.rectangle.width, r.rectangle.height);
+			
+			try {
+				perspCorrect.inverseTransform(origin, origin);
+				perspCorrect.inverseTransform(dim, dim);
+			} catch (java.awt.geom.NoninvertibleTransformException e) {}
+			
+			r.rectangle = new Rectangle(origin.x, origin.y, dim.x, dim.y);
+			r.x = origin.x; r.y = origin.y;
+			r.width = dim.x; r.height = dim.y;
+		}
+	}
 	
 	public void setContrast(int newContrast) {
 		contrast = newContrast;

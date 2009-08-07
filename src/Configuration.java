@@ -18,13 +18,16 @@ import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
 
-public class Configuration extends JFrame implements ActionListener, ChangeListener, MouseListener {
-	protected Gypsum app;
-	protected JPanel buttonPane, deck;
-	protected JPanel[] configCards;
-	protected JFrame calibration;
-	protected JButton cancel, previous, next;
-	protected VideoMonitor vidMon;
+public class Configuration extends JFrame implements ActionListener, ChangeListener, MouseListener, MouseMotionListener {
+	private Gypsum app;
+	private JPanel buttonPane, deck;
+	private JPanel[] configCards;
+	private JButton cancel, previous, next;
+	private VideoMonitor vidMon;
+	private Calibration cal; 
+	private Point[] calPoints;
+	private int numCalPoints, cpIndex;
+	private boolean movingCalPoint;
 	protected static int configWidth = 500;
 	protected static int configHeight = 400;
 	protected static int configTop = Toolkit.getDefaultToolkit().getScreenSize().height/2 - (configHeight/2) - 20;
@@ -40,6 +43,11 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 		app = _app;
 		strings = ResourceBundle.getBundle("strings", Locale.getDefault());
 		setTitle(strings.getString("configIntroTitle"));
+		
+		calPoints = new Point[4];
+		numCalPoints = 0;
+		movingCalPoint = false;
+		cpIndex = 0;
 		
 		// attempt to load lucida grande for the body font,
 		// but if loading fails, use the generic sans serif
@@ -119,14 +127,20 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 				previous.setEnabled(true);
 				next.setEnabled(false);
 				this.setTitle(strings.getString("configTitle"));
-			} else if (panel == 4) {
-				vidMon.stop();
-				vidMon = null;
-				panel--;
-				startCalibration();
-				return;
+			
+			} else if (panel == 3) {
+				numCalPoints = 0;
+				next.setEnabled(false);
+				cal = new Calibration(app, this, vidMon);
+				toFront();
 				
-			} else if (panel == configCards.length - 1) {
+			} else if (panel == 4) {
+				vidMon.calibrate(config, app.new fsWindowProperties());
+				cal.setVisible(false);
+					   
+			}
+			
+			if (panel == configCards.length - 1) {
 				next.setText("Finish");
 				next.setActionCommand("finish");
 			}
@@ -140,6 +154,12 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 		} else if ("previous".equals(e.getActionCommand())) {
 			if (panel > 0) {
 				panel--;
+			}
+			
+			if (panel == 2) {
+				numCalPoints = 0;
+				calPoints = new Point[4];
+				createConfigCard(2);
 			}
 			
 			if (panel == 0) {
@@ -205,17 +225,55 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 		if ("thresholdSlider".equals(e.getComponent().getName())) {
 			vidMon.setThresholded(true);
 		}
+		
+		if ("vidmon".equals(e.getComponent().getName()) && panel == 3) {
+			if (numCalPoints < 4) {
+				calPoints[numCalPoints] = new Point(e.getX(), e.getY());
+				numCalPoints++;
+				
+				if (numCalPoints == 4) {
+					next.setEnabled(true);
+				}
+				
+				vidMon.setCalPoints(calPoints);
+			} else if (numCalPoints == 4) {
+				int mx = e.getX(); int my = e.getY();
+				for (int i = 0; i < 4; i++) {
+					if (Math.abs(mx - calPoints[i].x) < 4 && Math.abs(my - calPoints[i].y) < 4) {
+						movingCalPoint = true;
+						cpIndex = i;
+						
+						calPoints[i] = new Point(mx, my);
+						vidMon.setCalPoints(calPoints);
+						
+						break;
+					}
+				}
+			}
+		}
+	}
+	
+	
+	public void mouseDragged(MouseEvent e) {
+		if (movingCalPoint) {
+			calPoints[cpIndex] = new Point(e.getX(), e.getY());
+			vidMon.setCalPoints(calPoints);
+		}
 	}
 	
 	public void mouseReleased(MouseEvent e) {
 		if ("thresholdSlider".equals(e.getComponent().getName())) {
 			vidMon.setThresholded(false);
 		}
+		
+		movingCalPoint = false;
+		cpIndex = 0;
 	}
 	
 	public void mouseEntered(MouseEvent e) {}
 	public void mouseExited(MouseEvent e) {}
 	public void mouseClicked(MouseEvent e) {}
+	public void mouseMoved(MouseEvent e) {}
 	
 	public void createConfigCard(int index) {
 		if (index == 0) {
@@ -349,7 +407,10 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			videoPanel.add(contrastSliderPanel);
 			videoPanel.add(Box.createHorizontalStrut(13));
 			
-			vidMon = new VideoMonitor();
+			vidMon = new VideoMonitor(320, 240);
+			vidMon.setName("vidmon");
+			vidMon.addMouseListener(this);
+			vidMon.addMouseMotionListener(this);
 			vidMon.setAlignmentX(Component.CENTER_ALIGNMENT);
 			videoPanel.add(vidMon);
 			videoPanel.add(Box.createHorizontalStrut(13));
@@ -373,7 +434,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			
 			deck.add(configCards[2], "imageAdjustCard");
 		} else if (index == 3) {
-			// -- FOURTH CONFIGURATION CARD - CALIBRATION MESSAGE -- //
+			// -- FOURTH CONFIGURATION CARD - CALIBRATION -- //
 			configCards[3] = new JPanel();
 			configCards[3].setLayout(new BoxLayout(configCards[3], BoxLayout.Y_AXIS));
 			
@@ -382,6 +443,14 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			calibrationMessage.setAlignmentX(Component.CENTER_ALIGNMENT);
 			configCards[3].add(calibrationMessage);
 			
+			JPanel vidPanel = new JPanel();
+			vidPanel.setLayout(new BoxLayout(vidPanel, BoxLayout.X_AXIS));
+			vidPanel.add(Box.createHorizontalStrut(90));
+			vidPanel.add(vidMon);
+			vidPanel.add(Box.createHorizontalStrut(90));
+			
+			configCards[3].add(vidPanel);
+			
 			deck.add(configCards[3], "calibrationCard");
 		} else if (index == 4) {
 			// -- FIFTH CARD - FINISHED -- //
@@ -389,6 +458,11 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			configCards[4].setLayout(new BoxLayout(configCards[4], BoxLayout.Y_AXIS));
 			
 			JLabel imageMessage = new JLabel(strings.getString("finishedMessage"));
+			imageMessage.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+			imageMessage.setAlignmentX(Component.CENTER_ALIGNMENT);
+			configCards[4].add(imageMessage);
+			
+			deck.add(configCards[4], "finishedCard");
 		}
 	}
 	

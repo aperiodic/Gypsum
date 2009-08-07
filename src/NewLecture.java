@@ -18,7 +18,7 @@ public class NewLecture extends JFrame implements ActionListener {
 	protected Gypsum app;
 	private JList images;
 	private DefaultListModel model;
-	private JButton start;
+	private JButton start, removeImage;
 	private int from;
 	public String[] files;
 	
@@ -30,11 +30,11 @@ public class NewLecture extends JFrame implements ActionListener {
 		files = new String[0];
 		
 		ResourceBundle strings = ResourceBundle.getBundle ("strings", Locale.getDefault());
-		this.getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.Y_AXIS));
+		//this.getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.Y_AXIS));
 		
 		JPanel contentPanel = new JPanel();
 		contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-		contentPanel.setBorder(BorderFactory.createEmptyBorder(20, -320, 20, 20));
+		contentPanel.setBorder(BorderFactory.createEmptyBorder(20, -440, 20, 20));
 		
 		JLabel newLectureMessage = new JLabel(strings.getString("newLectureMessage"));
 		contentPanel.add(newLectureMessage);
@@ -77,11 +77,24 @@ public class NewLecture extends JFrame implements ActionListener {
 		
 		contentPanel.add(listScroller);
 		
+		JPanel buttonsPane = new JPanel();
+		buttonsPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
+		
 		JButton addImageButton = new JButton(strings.getString("addImageButton"));
 		addImageButton.setActionCommand("addImages");
 		addImageButton.addActionListener(this);
-		contentPanel.add(addImageButton);
+		buttonsPane.add(addImageButton);
+		
+		removeImage = new JButton(strings.getString("removeImageButton"));
+		removeImage.setActionCommand("removeImage");
+		removeImage.addActionListener(this);
+		removeImage.setEnabled(false);
+		buttonsPane.add(removeImage);
+		buttonsPane.add(Box.createHorizontalStrut(205));
+		
+		contentPanel.add(buttonsPane);
 		contentPanel.add(Box.createVerticalStrut(20));
+		
 		
 		JPanel buttonPane = new JPanel();
 		buttonPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
@@ -132,6 +145,20 @@ public class NewLecture extends JFrame implements ActionListener {
 			
 			if (files.length > 0) {
 				start.setEnabled(true);
+				removeImage.setEnabled(true);
+			}
+		}
+		
+		if ("removeImage".equals(e.getActionCommand())) {
+			int selected = images.getSelectedIndex();
+			if (selected == -1) {
+				model.remove(model.getSize()-1);
+			} else {
+				model.remove(selected);
+			}
+			if (model.getSize() == 0) {
+				start.setEnabled(false);
+				removeImage.setEnabled(false);
 			}
 		}
 		
@@ -144,7 +171,7 @@ public class NewLecture extends JFrame implements ActionListener {
 			// tell the main class we have images and should
 			// start monitoring
 			Lecture lect = new Lecture(files);
-			//app.startLecture(new Lecture(files));
+			app.startLecture(new Lecture(files));
 			setVisible(false);
 		}
 	}

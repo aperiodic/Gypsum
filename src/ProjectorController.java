@@ -44,11 +44,15 @@ public class ProjectorController extends JFrame {
 		
 		setLocation(fswp.x, fswp.y);
 		setSize(fswp.width, fswp.height);
-		
+		setResizable(false);
+		setBackground(new Color(0, 0, 0));
 		setVisible(true);
 	}
 	
 	public void paint(Graphics g) {
+		g.setColor(new Color(0, 0, 0));
+		g.fillRect(0, 0, getWidth(), getHeight());
+		
 		for (int i = 0; i < rects.size(); i++) {
 			Rect r = (Rect) rects.get(i);
 			if (r.label > 0) {
@@ -66,7 +70,7 @@ public class ProjectorController extends JFrame {
 	public void changeLabel(Rect cr) {
 		for (int i = 0; i < rects.size(); i++) {
 			Rect or = (Rect) rects.get(i);
-			if (or.x == cr.x && or.y == cr.y) {
+			if (GeomUtils.doOverlap(or, cr)) {
 				or.label = cr.label;
 				break;
 			}
@@ -78,7 +82,7 @@ public class ProjectorController extends JFrame {
 	public void removeRect(Rect r) {
 		for (int i = 0; i < rects.size(); i++) {
 			Rect or = (Rect) rects.get(i);
-			if (or.x == r.x && or.y == r.y) {
+			if (GeomUtils.doOverlap(r, or)) {
 				rects.remove(i);
 				break;
 			}

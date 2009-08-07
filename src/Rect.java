@@ -12,12 +12,13 @@ import java.awt.Image;
 
 public class Rect {
 	public Rectangle rectangle;
-	public Date	lastObserved;
+	public long	lastObserved, firstObserved;
 	public int x, y, width, height, label;
 	
 	public Rect (Rectangle rect, int lab) {
 		rectangle = rect;
-		lastObserved = new Date();
+		firstObserved = new Date().getTime();
+		lastObserved = new Date().getTime();
 		label = lab;
 		x = rect.x;
 		y = rect.y;
@@ -27,7 +28,8 @@ public class Rect {
 	
 	public Rect (Rectangle rect) {
 		rectangle = rect;
-		lastObserved = new Date();
+		firstObserved = new Date().getTime();
+		lastObserved = new Date().getTime();
 		x = rect.x;
 		y = rect.y;
 		width = rect.width;

@@ -77,7 +77,7 @@ public class Gypsum extends JFrame {
 		if(!loadConfiguration()) {
 			// couldn't find or create the config file
 		} else {
-			dummyConfig();
+			//dummyConfig();
 			/*rectManager = new RectangleManager();
 			projector = new ProjectorController(this);
 			VideoMonitor vidmon = new VideoMonitor(640, 480, config, this, rectManager);
@@ -86,14 +86,15 @@ public class Gypsum extends JFrame {
 			setSize(640, 480);
 			setVisible(true);*/
 			
-			//if (!config.getProperty("configured").equals("yes")) {
-			//	configure();
+			if (!config.getProperty("configured").equals("yes")) {
+				configure();
 				
-			//} else {
+			} else {
 				//monitor();
-			//}
+				newlect = new NewLecture(this);
+				newlect.setVisible(true);
+			}
 		}
-		setVisible(true);
 	}
 
 	// attempt to load the configuration file
@@ -147,7 +148,8 @@ public class Gypsum extends JFrame {
 	}
 	
 	public void configurationFinished() {
-		monitor();
+		newlect = new NewLecture(this);
+		newlect.setVisible(true);
 	}
 	
 	public Properties getConfiguration() {
@@ -173,9 +175,9 @@ public class Gypsum extends JFrame {
 	
 	private void dummyConfig() {
 		config = new Properties();
-		config.setProperty("threshold", "122");
-		config.setProperty("contrast", "87");
-		config.setProperty("projectorMode", "mirrored");
+		config.setProperty("threshold", "40");
+		config.setProperty("contrast", "50");
+		config.setProperty("projectorMode", "extendedR");
 		config.setProperty("perspTLx", "240"); config.setProperty("perspTLy", "160");
 		config.setProperty("perspTRx", "400"); config.setProperty("perspTRy", "160");
 		config.setProperty("perspBRx", "400"); config.setProperty("perspBRy", "320");

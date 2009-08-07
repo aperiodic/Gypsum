@@ -10,13 +10,29 @@ import java.util.ArrayList;
 import java.util.Date;
 
 public class RectangleManager {
-	public ArrayList rects;
+	public ArrayList rects, freshRects;
 	private VideoMonitor vidmon;
 	private ProjectorController projector;
+	boolean projecting;
+	
+	public RectangleManager() {
+		rects = new ArrayList();
+		freshRects = new ArrayList();
+		projecting = false;
+	}
+	
+	public RectangleManager(VideoMonitor theVidMon) {
+		vidmon = theVidMon;
+		rects = new ArrayList();
+		freshRects = new ArrayList();
+		projecting = false;
+	}
 	
 	public RectangleManager(ProjectorController theProjector) {
 		rects = new ArrayList();
+		freshRects = new ArrayList();
 		projector = theProjector;
+		projecting = true;
 	}
 	
 	public void report(ArrayList foundRects) {
@@ -31,8 +47,8 @@ public class RectangleManager {
 				if (i == j) continue;
 				
 				Rect or = (Rect) foundRects.get(j);
-				if (doOverlap(fr, or)) {
-					if (rectArea(fr) >= rectArea(or)) {
+				if (GeomUtils.doOverlap(fr, or)) {
+					if (GeomUtils.rectArea(fr) >= GeomUtils.rectArea(or)) {
 						foundRects.remove(j);
 						j--;
 					} else {
@@ -40,6 +56,32 @@ public class RectangleManager {
 						i--;
 						break;
 					}
+				}
+			}
+		}
+		
+		// see if any of the reported rectangles overlap
+		// "fresh" rectangles (rectangles < 0.25 seconds old).
+		// if so, update the fresh rect's geometric info
+		// with the reported rect's. this is to avoid situations
+		// where only half of a rectangle is projected onto,
+		// because it was prematurely identified while something
+		// was obscuring part of it.
+		for (int i = 0; i < freshRects.size(); i++) {
+			Rect fsr = (Rect) freshRects.get(i);
+			
+			for (int j = 0; j < foundRects.size(); j++) {
+				Rect fr = (Rect) foundRects.get(j);
+				
+				if (GeomUtils.doOverlap(fsr, fr)) {
+					fsr.rectangle = fr.rectangle;
+					fsr.x = fr.x; fsr.y = fr.y;
+					fsr.width = fr.width; fsr.height = fr.height;
+					fsr.label = fr.label;
+					fsr.lastObserved = new Date().getTime();
+					
+					foundRects.remove(j);
+					j--;
 				}
 			}
 		}
@@ -52,23 +94,44 @@ public class RectangleManager {
 			for (int j = 0; j < foundRects.size(); j++) {
 				Rect fr = (Rect) foundRects.get(j);
 				
-				if (doOverlap(fr, kr)) {
+				if (GeomUtils.doOverlap(fr, kr)) {
 					if (fr.label != kr.label) {
-						// notify projector controller of label change
+						kr.label = fr.label;
+						
+						if (projecting) {
+							projector.changeLabel(fr);
+						}
 					}
+					kr.lastObserved = new Date().getTime();
 					
 					foundRects.remove(j);
 					j--;
-					kr.lastObserved = new Date();
 				}
 			}
 		}
 		
-		// for each new rect, notify the projector controller
+		// move each new rect to the "fresh" rects arraylist
 		for (int i = 0; i < foundRects.size(); i++) {
 			Rect nr = (Rect) foundRects.get(i);
-			projector.newRect(nr);
-			rects.add(nr);
+			freshRects.add(nr);
+		}
+		
+		// move each fresh rect > 0.25 seconds old into rects
+		// and notify projector (if projecting)
+		for (int i = 0; i < freshRects.size(); i++) {
+			Rect fsr = (Rect) freshRects.get(i);
+			
+			long now = new Date().getTime();
+			if (now - fsr.firstObserved > 250) {
+				rects.add(fsr);
+				
+				if (projecting) {
+					projector.newRect(fsr);
+				}
+				
+				freshRects.remove(i);
+				i--;
+			}
 		}
 		
 		if (vidmon != null) {
@@ -76,41 +139,21 @@ public class RectangleManager {
 		}
 	}
 	
-	// get rid of rectangles that haven't been seen in over 5 seconds
+	// get rid of rectangles that haven't been seen in over 3 seconds
 	private void flushOldRects() {
 		long now = new Date().getTime();
 		
 		for (int i = 0; i < rects.size(); i++) {
 			Rect r = (Rect) rects.get(i);
-			long lastSeen = r.lastObserved.getTime();
-			if (now - lastSeen > 5000) {
-				projector.removeRect(r);
+			long lastSeen = r.lastObserved;
+			if (now - lastSeen > 3000) {
+				if (projecting) {
+					projector.removeRect(r);
+				}
 				rects.remove(i);
 				i--;
 			}
 		}
-	}
-	
-	private boolean doOverlap(Rect rectA, Rect rectB) {
-		int A1 = rectA.x; int A2 = rectA.x + rectA.width;
-		int B1 = rectB.x; int B2 = rectB.x + rectB.width;
-		
-		if (!( (A1 >= B1 && A1 <= B2) || (B1 >= A1 && B1 <= A2))) {
-			return false;
-		}
-		
-		A1 = rectA.y; A2 = rectA.y + rectA.height;
-		B1 = rectB.y; B2 = rectB.y + rectB.height;
-		
-		if (!( (A1 >= B1 && A1 <= B2) || (B1 >= A1 && B1 <= A2))) {
-			return false;
-		}
-		
-		return true;
-	}
-	
-	private int rectArea(Rect rect) {
-		return rect.width * rect.height;
 	}
 	
 	public void setVideoMonitor(VideoMonitor theVidMon) {

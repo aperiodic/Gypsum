@@ -35,12 +35,6 @@ public class Calibration extends JFrame {
 		setVisible(true);
 	}
 	
-	public void calibrate() {
-		Gypsum.fsWindowProperties fswp = gypsum.new fsWindowProperties();
-		vidMon.perspectiveCorrect(fswp);
-	}
-		
-	
 	public void paint(Graphics g) {
 		
 		Gypsum.fsWindowProperties fswp = gypsum.new fsWindowProperties();
@@ -70,12 +64,6 @@ public class Calibration extends JFrame {
 			g.fillRect(0, fswp.height*3/4 - 3, fswp.width, 6);			
 		}
 		
-		// the reason this timer is used (rather than just calling 
-		// calibrate() now) is that the AWTEventQueue has to be
-		// emptied so that the test image is being projected when
-		// calibration is occuring.
-		java.util.Timer calibrationTimer = new java.util.Timer();
-		calibrationTimer.schedule(new CalibrationTimerTask(this), 100);
 	}
 	
 	
