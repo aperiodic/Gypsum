@@ -72,7 +72,11 @@
 		<!-- fix stub permissions -->
 		<exec executable="/bin/chmod">
 			<arg line="755 '${application.macos.stub}'"/>
-		</exec>		
+		</exec>	
+		<!-- remove x86_64 architecture from the application stub -->
+		<exec executable="/usr/bin/lipo">
+			<arg line=" '${application.macos.stub}' -remove x86_64 -output '${application.macos.stub}'"/>
+		</exec>
 		<!-- copy and configure Info.plist -->
 		<copy file="${resources_macosx}/Info.plist" toFile="${dist}/${ant.project.name}.app/Contents/Info.plist">
 			<filterset>
