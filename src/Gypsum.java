@@ -78,14 +78,14 @@ public class Gypsum extends JFrame {
 			// couldn't find or create the config file
 		} else {
 			
-			if (!config.getProperty("configured").equals("yes")) {
+			//if (!config.getProperty("configured").equals("yes")) {
 				configure();
 				
-			} else {
+			//} else {
 				//monitor();
-				newlect = new NewLecture(this);
-				newlect.setVisible(true);
-			}
+				//newlect = new NewLecture(this);
+				//newlect.setVisible(true);
+			//}
 		}
 	}
 
@@ -153,6 +153,11 @@ public class Gypsum extends JFrame {
 		
 		setSize(740, 502);
 		setVisible(true);
+	}
+	
+	public void	newLecture() {
+		newlect = new NewLecture(this);
+		newlect.setVisible(true);
 	}
 	
 	public void startLecture(Lecture theLecture) {

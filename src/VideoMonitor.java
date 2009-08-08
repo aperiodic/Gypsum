@@ -546,6 +546,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 	}
 	
 	private void findLabels(ArrayList theRects) {
+		cv.blur(OpenCV.GAUSSIAN, 5);
 		Blob[] lablobs = cv.blobs(100, 6000, 100, true, OpenCV.MAX_VERTICES*4);
 		
 		for (int i = 0; i < theRects.size(); i++) {

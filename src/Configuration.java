@@ -203,7 +203,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			config.setProperty("projectorMode", "mirrored");
 			
 		} else if ("cancel".equals(e.getActionCommand())) {
-			
+			app.newLecture();
 		}
 	}
 	
