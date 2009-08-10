@@ -50,7 +50,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 	private Point[] calPoints;
 	
 	private int contrast, threshold;
-	private boolean thresholded, shouldStop, edgeDetect, calibrated, failedCal;
+	private boolean thresholded, shouldStop, edgeDetect, calibrated, failedCal, blur;
 	
 	VideoMonitor() {
 		super();
@@ -164,6 +164,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 		edgeDetect = false;
 		calibrated = false;
 		failedCal = false;
+		blur = false;
 		
 		idTransform = new AffineTransform();
 		
@@ -546,7 +547,13 @@ public class VideoMonitor extends JPanel implements Runnable {
 	}
 	
 	private void findLabels(ArrayList theRects) {
-		cv.blur(OpenCV.GAUSSIAN, 5);
+		if (blur) {
+			cv.restore(OpenCV.GRAY);
+			cv.contrast(contrast);
+			cv.threshold(threshold);
+			cv.blur(OpenCV.BLUR, 3);
+		}
+		
 		Blob[] lablobs = cv.blobs(100, 6000, 100, true, OpenCV.MAX_VERTICES*4);
 		
 		for (int i = 0; i < theRects.size(); i++) {
@@ -651,6 +658,14 @@ public class VideoMonitor extends JPanel implements Runnable {
 	
 	public void setEdgeDetection(boolean enabled) {
 		edgeDetect = enabled;
+	}
+	
+	public void setBlurred(boolean enabled) {
+		blur = enabled;
+	}
+	
+	public boolean getBlurred() {
+		return blur;
 	}
 	
 	public void start() {

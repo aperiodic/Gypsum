@@ -14,12 +14,13 @@ import java.util.Properties;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 
 import javax.swing.*;
 
 import com.apple.eawt.*;
 
-public class Gypsum extends JFrame {
+public class Gypsum extends JFrame implements KeyListener {
 
 	private Font font = new Font("serif", Font.ITALIC+Font.BOLD, 36);
 	protected ResourceBundle strings;
@@ -30,6 +31,7 @@ public class Gypsum extends JFrame {
 	protected NewLecture newlect;
 	protected RectangleManager rectManager;
 	protected ProjectorController projector;
+	protected VideoMonitor vidmon;
 	private Application fApplication = Application.getApplication();
 	protected Action newAction, openAction, closeAction, saveAction, saveAsAction,
 					 undoAction, cutAction, copyAction, pasteAction, clearAction, selectAllAction;
@@ -79,12 +81,12 @@ public class Gypsum extends JFrame {
 		} else {
 			
 			//if (!config.getProperty("configured").equals("yes")) {
-				configure();
+			//	configure();
 				
 			//} else {
 				//monitor();
-				//newlect = new NewLecture(this);
-				//newlect.setVisible(true);
+				newlect = new NewLecture(this);
+				newlect.setVisible(true);
 			//}
 		}
 	}
@@ -163,8 +165,10 @@ public class Gypsum extends JFrame {
 	public void startLecture(Lecture theLecture) {
 		projector = new ProjectorController(theLecture, this);
 		rectManager = new RectangleManager(projector);
-		VideoMonitor vidmon = new VideoMonitor(640, 480, config, this, rectManager);
+		vidmon = new VideoMonitor(640, 480, config, this, rectManager);
 		vidmon.setThresholded(true);
+		vidmon.setName("vidmon");
+		addKeyListener(this);
 		add(vidmon);
 		rectManager.setVideoMonitor(vidmon);
 		setSize(640, 480);
@@ -229,6 +233,16 @@ public class Gypsum extends JFrame {
 			}
 		}
 	}
+	
+	public void keyPressed(KeyEvent e) {
+		if (e.getKeyChar() == 'b') {
+			vidmon.setBlurred(!vidmon.getBlurred());
+			System.out.println("blur is" + vidmon.getBlurred());
+		}
+	}
+	
+	public void keyReleased(KeyEvent e) {}
+	public void keyTyped(KeyEvent e) {}
 	
 	// -- APPLE JAVA EXTENSION METHODS -- //
 	
