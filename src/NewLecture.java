@@ -14,6 +14,9 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
+import java.io.File;
+import java.io.FilenameFilter;
+
 public class NewLecture extends JFrame implements ActionListener {
 	protected Gypsum app;
 	private JList images;
@@ -22,11 +25,15 @@ public class NewLecture extends JFrame implements ActionListener {
 	private int from;
 	public String[] files;
 	
+	protected static int frameWidth = 500;
+	protected static int frameHeight = 400;
+	protected static int frameTop = Toolkit.getDefaultToolkit().getScreenSize().height/2 - (frameHeight/2) - 20;
+	protected static int frameLeft = Toolkit.getDefaultToolkit().getScreenSize().width/2 - (frameWidth/2);
+	
 	public NewLecture(Gypsum theApp) {
 		super();
 		
 		app = theApp;
-		
 		files = new String[0];
 		
 		ResourceBundle strings = ResourceBundle.getBundle ("strings", Locale.getDefault());
@@ -45,6 +52,7 @@ public class NewLecture extends JFrame implements ActionListener {
 		
 		model = new DefaultListModel();
 		images = new JList(model);
+		images.setFocusable(false);
 		images.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		images.setLayoutOrientation(JList.VERTICAL);
 		images.setVisibleRowCount(-1);
@@ -113,25 +121,51 @@ public class NewLecture extends JFrame implements ActionListener {
 		contentPanel.add(buttonPane);
 		
 		this.getContentPane().add(contentPanel);
+		this.getRootPane().setDefaultButton(start);
 		
-		setSize(500, 400);
+		addWindowListener(new WindowAdapter() {
+							public void windowClosing(WindowEvent e) {
+								app.handleClosing(e);
+							}
+							public void windowClosed(WindowEvent e) {
+								app.handleClosed(e);
+							}
+							public void windowActivated(WindowEvent e) {
+								app.handleActivated(e);
+							}
+							public void windowDeactivated(WindowEvent e) {
+								app.handleDeactivated(e);
+							}
+							public void windowOpened(WindowEvent e) {
+								app.handleOpened(e);
+							}
+						  });
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		
+		setSize(frameWidth, frameHeight);
 		setResizable(false);
-		setLocation(420, 200);
+		setLocation(frameLeft, frameTop);
 		
 	}
 	
 	public void actionPerformed(ActionEvent e) {
 		if ("addImages".equals(e.getActionCommand())) {
-			FileDialog fd = new FileDialog(this, "Open Image");
+			FileDialog fd = new FileDialog(this, "Open Image", FileDialog.LOAD);
+			fd.setFilenameFilter(new FilenameFilter() {
+									public boolean accept(File dir, String name){
+										return (name.toLowerCase().endsWith(".jpg") || name.endsWith(".png"));
+									}
+								 });
+			
 			fd.setVisible(true);
 			
-			if (fd.getDirectory() == null || fd.getFile() == null) {
+			if (fd.getDirectory() == null) {
 				return;
 			}
 			
 			String dir = fd.getDirectory();
 			String file = fd.getFile();
-			
+				
 			model.add(model.getSize(), file);
 			String[] oldFiles = files;
 			
@@ -151,10 +185,25 @@ public class NewLecture extends JFrame implements ActionListener {
 		
 		if ("removeImage".equals(e.getActionCommand())) {
 			int selected = images.getSelectedIndex();
+			String[] oldFiles = files;
 			if (selected == -1) {
 				model.remove(model.getSize()-1);
+				files = new String[oldFiles.length - 1];
+				for (int i = 0; i < files.length; i++) {
+					files[i] = oldFiles[i];
+				}
 			} else {
 				model.remove(selected);
+				files = new String[oldFiles.length - 1];
+				for (int i = 0; i < files.length; i++) {
+					int index;
+					if (i >= selected) {
+						index = i+1;
+					} else {
+						index = i;
+					}
+					files[index] = oldFiles[index];
+				}
 			}
 			if (model.getSize() == 0) {
 				start.setEnabled(false);

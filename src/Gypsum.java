@@ -12,15 +12,13 @@ import java.util.ResourceBundle;
 import java.util.Properties;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.awt.event.*;
 
 import javax.swing.*;
 
 import com.apple.eawt.*;
 
-public class Gypsum extends JFrame implements KeyListener {
+public class Gypsum extends JFrame {
 
 	private Font font = new Font("serif", Font.ITALIC+Font.BOLD, 36);
 	protected ResourceBundle strings;
@@ -30,13 +28,14 @@ public class Gypsum extends JFrame implements KeyListener {
 	protected Configuration configurate;
 	protected NewLecture newlect;
 	protected RectangleManager rectManager;
-	protected ProjectorController projector;
+	protected ProjectorView projector;
 	protected VideoMonitor vidmon;
+	private int vidmonRefCount = 0;
+	protected JFrame adjustor;
 	private Application fApplication = Application.getApplication();
-	protected Action newAction, openAction, closeAction, saveAction, saveAsAction,
-					 undoAction, cutAction, copyAction, pasteAction, clearAction, selectAllAction;
+	protected Action newAction, openAction, closeAction, saveAction, saveAsAction, configureAction,  adjustorAction;
 	static final JMenuBar mainMenuBar = new JMenuBar();	
-	protected JMenu fileMenu, editMenu; 
+	protected JMenu fileMenu, editMenu, windowMenu;
 	
 	public Gypsum() {
 		
@@ -47,9 +46,25 @@ public class Gypsum extends JFrame implements KeyListener {
 		strings = ResourceBundle.getBundle ("strings", Locale.getDefault());
 		setTitle(strings.getString("frameConstructor"));
 		
+		addWindowListener(new WindowAdapter() {
+							public void windowClosed(WindowEvent e) {
+								Gypsum.this.handleClosed(e);
+							}
+							public void windowActivated(WindowEvent e) {
+								Gypsum.this.handleActivated(e);
+							}
+							public void windowDeactivated(WindowEvent e) {
+								Gypsum.this.handleDeactivated(e);
+							}
+							public void windowOpened(WindowEvent e) {
+								Gypsum.this.handleOpened(e);
+							}
+						  });
+						  
 		createActions();
 		addMenus();
-
+		vidmon = null;
+		
 		fApplication.setEnabledPreferencesMenu(true);
 		fApplication.addApplicationListener(new com.apple.eawt.ApplicationAdapter() {
 			public void handleAbout(ApplicationEvent e) {
@@ -79,15 +94,13 @@ public class Gypsum extends JFrame implements KeyListener {
 		if(!loadConfiguration()) {
 			// couldn't find or create the config file
 		} else {
-			
-			//if (!config.getProperty("configured").equals("yes")) {
-			//	configure();
+			if (!config.getProperty("configured").equals("yes")) {
+				configure();
 				
-			//} else {
-				//monitor();
+			} else {
 				newlect = new NewLecture(this);
 				newlect.setVisible(true);
-			//}
+			}
 		}
 	}
 
@@ -134,14 +147,14 @@ public class Gypsum extends JFrame implements KeyListener {
 	
 	// start the configuration process
 	public void configure() {
-		if (configurate == null) {
-			configurate = new Configuration(this);
-		}
-		this.setVisible(false);
+		
+		configurate = new Configuration(this);
 		configurate.startConfiguration(config);
+		configurate.setVisible(true);
 	}
 	
-	public void configurationFinished() {
+	public void configurationFinished(Properties cfg) {
+		config = cfg;
 		newlect = new NewLecture(this);
 		newlect.setVisible(true);
 	}
@@ -150,11 +163,12 @@ public class Gypsum extends JFrame implements KeyListener {
 		return config;
 	}
 	
-	public void monitor() {
-		this.add(new VideoAdjustor());
+	public void adjustor() {
+		adjustor = new VideoAdjustor(this, config, strings.getString("viewAdjustorItem"));
 		
-		setSize(740, 502);
-		setVisible(true);
+		adjustor.setSize(740, 502);
+		adjustor.setLocation(0, 0);
+		adjustor.setVisible(true);
 	}
 	
 	public void	newLecture() {
@@ -163,12 +177,15 @@ public class Gypsum extends JFrame implements KeyListener {
 	}
 	
 	public void startLecture(Lecture theLecture) {
-		projector = new ProjectorController(theLecture, this);
+		projector = new ProjectorView(theLecture, this);
 		rectManager = new RectangleManager(projector);
 		vidmon = new VideoMonitor(640, 480, config, this, rectManager);
 		vidmon.setThresholded(true);
 		vidmon.setName("vidmon");
-		addKeyListener(this);
+		
+		fileMenu.getItem(3).setEnabled(true);
+		fileMenu.getItem(4).setEnabled(true);
+	
 		add(vidmon);
 		rectManager.setVideoMonitor(vidmon);
 		setSize(640, 480);
@@ -191,6 +208,72 @@ public class Gypsum extends JFrame implements KeyListener {
 		super.paint(g);
 	}
 	
+	public void handleClosing(WindowEvent e) {
+		String windowClass = e.getWindow().getClass().toString();
+		
+		// if they just closed a lecture, pop up a new lecture window
+		if (windowClass.indexOf("ProjectorView") != -1) {
+			newLecture();
+			return;
+		}
+		
+		// if they closed the adjustor, release the video monitor
+		if (windowClass.indexOf("VideoAdjustor") != -1) {
+			releaseVideoMonitor();
+			return;
+		}
+		
+		// if the user is closing the configuration window, and 
+		// the app has been configured, just spawn a new lecture 
+		// window instead of quitting
+		if (windowClass.indexOf("Configuration") != -1 && 
+			!"yes".equals(config.getProperty("configured"))) {
+			e.getWindow().setVisible(false);
+			newLecture();
+			return;
+		}
+		
+		Object[] buttons = {"OK", "Cancel"};
+		int closeResult = JOptionPane.showOptionDialog(e.getWindow(),
+													   "<html><span style=\"font-weight: bold; font-size: 14pt;\">Are you sure you want to close this window?</span><br><br>This will quit Gypsum.</html>",
+													   "Quit",
+													   JOptionPane.YES_NO_OPTION,
+													   JOptionPane.QUESTION_MESSAGE,
+													   null,
+													   buttons,
+													   buttons[0]);
+		if (closeResult == JOptionPane.NO_OPTION || closeResult == JOptionPane.CLOSED_OPTION) {
+			return;
+		}
+		
+		e.getWindow().setVisible(false);
+		
+		System.exit(0);
+	}
+	
+	public void handleClosed(WindowEvent e) {
+	}
+	
+	public void handleOpened(WindowEvent e) {
+		String windowClass = e.getWindow().getClass().toString();
+		if (windowClass.indexOf("NewLecture") >= 0) {
+			if (configurate != null) configurate.setVisible(false);
+			
+		} else if (windowClass.indexOf("Configuration") >= 0) {
+			if (newlect != null) newlect.setVisible(false);
+		}
+	}
+	
+	public void handleActivated(WindowEvent e) {
+		JFrame theFrame = (JFrame) e.getWindow();
+		theFrame.setJMenuBar(mainMenuBar);
+	}
+	
+	public void handleDeactivated(WindowEvent e) {
+		JFrame theFrame = (JFrame) e.getWindow();
+		theFrame.setJMenuBar(null);
+	}
+	
 	// -- APPLICATION-WIDE CONVENIENCE METHODS & CLASSES -- //
 	
 	public class fsWindowProperties {
@@ -200,7 +283,7 @@ public class Gypsum extends JFrame implements KeyListener {
 			try {
 				// figure out how many logical display devices there are
 				if (GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices().length == 1) {
-					// if there's just one, fullscreening is easy (this is for development)
+					// if there's just one, fullscreening is easy (this is mainly for development)
 					GraphicsDevice mainDisplay = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[0];
 					width = mainDisplay.getDisplayMode().getWidth();
 					height = mainDisplay.getDisplayMode().getHeight();
@@ -234,15 +317,36 @@ public class Gypsum extends JFrame implements KeyListener {
 		}
 	}
 	
-	public void keyPressed(KeyEvent e) {
-		if (e.getKeyChar() == 'b') {
-			vidmon.setBlurred(!vidmon.getBlurred());
-			System.out.println("blur is" + vidmon.getBlurred());
+	public VideoMonitor newVideoMonitor(int w, int h) {
+		if (vidmon != null) {
+			return null;
 		}
+		
+		vidmon = new VideoMonitor(w, h);
+		vidmonRefCount = 1;
+		return vidmon;
 	}
 	
-	public void keyReleased(KeyEvent e) {}
-	public void keyTyped(KeyEvent e) {}
+	public VideoMonitor getVideoMonitor() {
+		vidmonRefCount++;
+		return vidmon;
+	}
+	
+	public boolean monitoring() {
+		if (vidmon == null) {
+			return false;
+		}
+		return true;
+	}
+	
+	public void releaseVideoMonitor () {
+		vidmonRefCount--;
+		
+		if (vidmonRefCount == 0) {
+			vidmon.stop();
+			vidmon = null;
+		}
+	}
 	
 	// -- APPLE JAVA EXTENSION METHODS -- //
 	
@@ -260,6 +364,8 @@ public class Gypsum extends JFrame implements KeyListener {
 		System.exit(0);
 	}
 	
+	// -- ACTIONS & MENUS -- //5
+	
 	public void createActions() {
 		int shortcutKeyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
 		
@@ -273,18 +379,9 @@ public class Gypsum extends JFrame implements KeyListener {
 		saveAction = new saveActionClass( strings.getString("saveItem"),
 										 KeyStroke.getKeyStroke(KeyEvent.VK_S, shortcutKeyMask) );
 		saveAsAction = new saveAsActionClass( strings.getString("saveAsItem") );
+		configureAction = new configureActionClass(strings.getString("configureItem"));
 		
-		undoAction = new undoActionClass( strings.getString("undoItem"),
-										 KeyStroke.getKeyStroke(KeyEvent.VK_Z, shortcutKeyMask) );
-		cutAction = new cutActionClass( strings.getString("cutItem"),
-									   KeyStroke.getKeyStroke(KeyEvent.VK_X, shortcutKeyMask) );
-		copyAction = new copyActionClass( strings.getString("copyItem"),
-										 KeyStroke.getKeyStroke(KeyEvent.VK_C, shortcutKeyMask) );
-		pasteAction = new pasteActionClass( strings.getString("pasteItem"),
-										   KeyStroke.getKeyStroke(KeyEvent.VK_V, shortcutKeyMask) );
-		clearAction = new clearActionClass( strings.getString("clearItem") );
-		selectAllAction = new selectAllActionClass( strings.getString("selectAllItem"),
-												   KeyStroke.getKeyStroke(KeyEvent.VK_A, shortcutKeyMask) );
+		adjustorAction = new adjustorActionClass( strings.getString("viewAdjustorItem"));
 	}
 	
 	public void addMenus() {
@@ -295,23 +392,26 @@ public class Gypsum extends JFrame implements KeyListener {
 		fileMenu.add(new JMenuItem(closeAction));
 		fileMenu.add(new JMenuItem(saveAction));
 		fileMenu.add(new JMenuItem(saveAsAction));
+		fileMenu.addSeparator();
+		fileMenu.add(new JMenuItem(configureAction));
+		
+		fileMenu.getItem(3).setEnabled(false);
+		fileMenu.getItem(4).setEnabled(false);
+		
 		mainMenuBar.add(fileMenu);
 		
-		editMenu = new JMenu(strings.getString("editMenu"));
-		editMenu.add(new JMenuItem(undoAction));
-		editMenu.addSeparator();
-		editMenu.add(new JMenuItem(cutAction));
-		editMenu.add(new JMenuItem(copyAction));
-		editMenu.add(new JMenuItem(pasteAction));
-		editMenu.add(new JMenuItem(clearAction));
-		editMenu.addSeparator();
-		editMenu.add(new JMenuItem(selectAllAction));
-		mainMenuBar.add(editMenu);
+		windowMenu = new JMenu(strings.getString("windowMenu"));
+		windowMenu.add(new JMenuItem(adjustorAction));
+		mainMenuBar.add(windowMenu);
 		
 		setJMenuBar(mainMenuBar);
 	}
 	
-	// -- APPLE JAVA EXTENSTION NESTED CLASSES -- //
+	public void attachMenu(JFrame aFrame) {
+		aFrame.setJMenuBar(mainMenuBar);
+	}
+	
+	// -- ABSTRACT ACTION NESTED CLASSES -- //
 	
 	public class newActionClass extends AbstractAction {
 		public newActionClass(String text, KeyStroke shortcut) {
@@ -319,10 +419,7 @@ public class Gypsum extends JFrame implements KeyListener {
 			putValue(ACCELERATOR_KEY, shortcut);
 		}
 		public void actionPerformed(ActionEvent e) {
-			if (newlect == null) {
-				newlect = new NewLecture(Gypsum.this);
-			}
-			newlect.setVisible(true);
+			newLecture();
 		}
 	}
 
@@ -342,7 +439,10 @@ public class Gypsum extends JFrame implements KeyListener {
 			putValue(ACCELERATOR_KEY, shortcut);
 		}
 		public void actionPerformed(ActionEvent e) {
-			System.out.println("Close...");
+			// close the window that currently has focus
+			java.awt.Window activeWindow = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusedWindow();
+			WindowEvent closeWindow = new WindowEvent(activeWindow, WindowEvent.WINDOW_CLOSING);
+			Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(closeWindow);
 		}
 	}
 	
@@ -360,67 +460,29 @@ public class Gypsum extends JFrame implements KeyListener {
 		public saveAsActionClass(String text) {
 			super(text);
 		}
+		
 		public void actionPerformed(ActionEvent e) {
 			System.out.println("Save As...");
 		}
 	}
 	
-	public class undoActionClass extends AbstractAction {
-		public undoActionClass(String text, KeyStroke shortcut) {
+	public class configureActionClass extends AbstractAction {
+		public configureActionClass(String text) {
 			super(text);
-			putValue(ACCELERATOR_KEY, shortcut);
 		}
+		
 		public void actionPerformed(ActionEvent e) {
-			System.out.println("Undo...");
+			configure();
 		}
 	}
 	
-	public class cutActionClass extends AbstractAction {
-		public cutActionClass(String text, KeyStroke shortcut) {
-			super(text);
-			putValue(ACCELERATOR_KEY, shortcut);
-		}
-		public void actionPerformed(ActionEvent e) {
-			System.out.println("Cut...");
-		}
-	}
-	
-	public class copyActionClass extends AbstractAction {
-		public copyActionClass(String text, KeyStroke shortcut) {
-			super(text);
-			putValue(ACCELERATOR_KEY, shortcut);
-		}
-		public void actionPerformed(ActionEvent e) {
-			System.out.println("Copy...");
-		}
-	}
-	
-	public class pasteActionClass extends AbstractAction {
-		public pasteActionClass(String text, KeyStroke shortcut) {
-			super(text);
-			putValue(ACCELERATOR_KEY, shortcut);
-		}
-		public void actionPerformed(ActionEvent e) {
-			System.out.println("Paste...");
-		}
-	}
-	
-	public class clearActionClass extends AbstractAction {
-		public clearActionClass(String text) {
+	public class adjustorActionClass extends AbstractAction {
+		public adjustorActionClass(String text) {
 			super(text);
 		}
+		
 		public void actionPerformed(ActionEvent e) {
-			System.out.println("Clear...");
-		}
-	}
-	
-	public class selectAllActionClass extends AbstractAction {
-		public selectAllActionClass(String text, KeyStroke shortcut) {
-			super(text);
-			putValue(ACCELERATOR_KEY, shortcut);
-		}
-		public void actionPerformed(ActionEvent e) {
-			System.out.println("Select All...");
+			adjustor();
 		}
 	}
 	

@@ -1,5 +1,5 @@
 //
-//  ProjectorController.java
+//  ProjectorView.java
 //  Gypsum
 //
 //  Created by DLP on 7/29/09.
@@ -16,13 +16,14 @@ import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
 
-public class ProjectorController extends JFrame {
+public class ProjectorView extends JFrame {
 	protected Lecture lecture;
 	protected Gypsum app;
 	protected Image[] images;
+	protected Image monitor;
 	protected ArrayList rects;
 	
-	public ProjectorController(Lecture theLecture, Gypsum theApp) {
+	public ProjectorView(Lecture theLecture, Gypsum theApp) {
 		app = theApp;
 		lecture = theLecture;
 		rects = new ArrayList();
@@ -42,6 +43,24 @@ public class ProjectorController extends JFrame {
 		
 		Gypsum.fsWindowProperties fswp = app.new fsWindowProperties();
 		
+		addWindowListener(new WindowAdapter() {
+							public void windowClosing(WindowEvent e) {
+								app.handleClosing(e);
+							}
+							public void windowClosed(WindowEvent e) {
+								app.handleClosed(e);
+							}
+							public void windowActivated(WindowEvent e) {
+								app.handleActivated(e);
+							}
+							public void windowDeactivated(WindowEvent e) {
+								app.handleDeactivated(e);
+							}
+							public void windowOpened(WindowEvent e) {
+								app.handleOpened(e);
+							}
+						  });
+		
 		setUndecorated(true);
 		setLocation(fswp.x, fswp.y);
 		setSize(fswp.width, fswp.height);
@@ -53,6 +72,10 @@ public class ProjectorController extends JFrame {
 	public void paint(Graphics g) {
 		g.setColor(new Color(0, 0, 0));
 		g.fillRect(0, 0, getWidth(), getHeight());
+		
+		if (monitor != null) {
+			g.drawImage(monitor, getWidth()-320, 0, 320, 240, this);
+		}
 		
 		for (int i = 0; i < rects.size(); i++) {
 			Rect r = (Rect) rects.get(i);
@@ -88,6 +111,12 @@ public class ProjectorController extends JFrame {
 				break;
 			}
 		}
+		
+		repaint();
+	}
+	
+	public void setMonitorImage(Image mon) {
+		monitor = mon;
 		
 		repaint();
 	}

@@ -12,13 +12,22 @@ import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
 
-public class VideoAdjustor extends JPanel implements ChangeListener, MouseListener {
+import java.util.Properties;
+
+public class VideoAdjustor extends JFrame implements ChangeListener, MouseListener {
 	protected VideoMonitor vidMon;
+	protected Properties config;
+	protected Gypsum app;
 	
-	VideoAdjustor() {
-		super();
-		this.setBounds(0, 0, 740, 480);
-		this.setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+	VideoAdjustor(Gypsum theApp, Properties cfg, String theTitle) {
+		super("");
+		setTitle(theTitle);
+		
+		app = theApp;
+		config = cfg;
+		
+		this.setBounds(0, 0, 740, 502);
+		this.getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.X_AXIS));
 		
 		JPanel contrastSliderPanel = new JPanel();
 		contrastSliderPanel.setLayout(new BoxLayout(contrastSliderPanel, BoxLayout.Y_AXIS));
@@ -33,7 +42,12 @@ public class VideoAdjustor extends JPanel implements ChangeListener, MouseListen
 		
 		this.add(contrastSliderPanel);
 		
-		vidMon = new VideoMonitor(640, 480);
+		if (app.monitoring()) {
+			vidMon = app.getVideoMonitor();
+		} else {
+			vidMon = app.newVideoMonitor(640, 480);
+		}
+		
 		vidMon.setName("video");
 		vidMon.addMouseListener(this);
 		this.add(vidMon);
@@ -50,7 +64,27 @@ public class VideoAdjustor extends JPanel implements ChangeListener, MouseListen
 		thresholdLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 		thresholdSliderPanel.add(thresholdLabel);
 		
+		addWindowListener(new WindowAdapter() {
+							public void windowClosing(WindowEvent e) {
+								app.handleClosing(e);
+							}
+							public void windowClosed(WindowEvent e) {
+								app.handleClosed(e);
+							}
+							public void windowActivated(WindowEvent e) {
+								app.handleActivated(e);
+							}
+							public void windowDeactivated(WindowEvent e) {
+								app.handleDeactivated(e);
+							}
+							public void windowOpened(WindowEvent e) {
+								app.handleOpened(e);
+							}
+						  });
+		
 		this.add(thresholdSliderPanel);
+		
+		
 	}
 	
 	public void stateChanged(ChangeEvent e) {
@@ -59,25 +93,23 @@ public class VideoAdjustor extends JPanel implements ChangeListener, MouseListen
 		if ("contrastSlider".equals(theComponent.getName())) {
 			JSlider cSlider = (JSlider) theComponent;
 			vidMon.setContrast(cSlider.getValue());
+			config.setProperty("contrast", "" + cSlider.getValue());
 		} else if ("thresholdSlider".equals(theComponent.getName())) {
 			JSlider tSlider = (JSlider) theComponent;
 			vidMon.setThreshold(tSlider.getValue());
+			config.setProperty("threshold", "" + tSlider.getValue());
 		}
 	}
 	
 	public void mousePressed(MouseEvent e) {
 		if ("thresholdSlider".equals(e.getComponent().getName())) {
 			vidMon.setThresholded(true);
-		} else if ("video".equals(e.getComponent().getName())) {
-			vidMon.setEdgeDetection(true);
 		}
 	}
 	
 	public void mouseReleased(MouseEvent e) {
 		if ("thresholdSlider".equals(e.getComponent().getName())) {
 			vidMon.setThresholded(false);
-		} else if ("video".equals(e.getComponent().getName())) {
-			vidMon.setEdgeDetection(false);
 		}
 	}
 	

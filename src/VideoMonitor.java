@@ -50,7 +50,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 	private Point[] calPoints;
 	
 	private int contrast, threshold;
-	private boolean thresholded, shouldStop, edgeDetect, calibrated, failedCal, blur;
+	private boolean thresholded, shouldStop, calibrated, failedCal, blur;
 	
 	VideoMonitor() {
 		super();
@@ -161,7 +161,6 @@ public class VideoMonitor extends JPanel implements Runnable {
 		contrast = 0;
 		threshold = 150;
 		thresholded = false;
-		edgeDetect = false;
 		calibrated = false;
 		failedCal = false;
 		blur = false;
@@ -279,17 +278,6 @@ public class VideoMonitor extends JPanel implements Runnable {
 					cv.threshold(threshold);
 				}
 				
-				
-				if (edgeDetect) {
-					BufferedImage bufIm = toBufferedImage(frame);
-					CannyEdgeDetector edged = new CannyEdgeDetector();
-					edged.setHighThreshold(12.5f);
-					edged.setLowThreshold(7.5f);
-					edged.setSourceImage(bufIm);
-					edged.process();
-					frame = edged.getEdgesImage();
-				}
-								
 				// find the rectangles in the image
 				Blob[] blobs = cv.blobs(100, WIDTH*HEIGHT/2, 100, true, OpenCV.MAX_VERTICES*4);
 				ArrayList rawRects = findRectangles(blobs);
@@ -429,7 +417,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 			boolean didmerge = false;
 			Blob b = (Blob) mBlobs.get(i);
 			Rectangle br = b.rectangle;
-			br = new Rectangle(br.x - 5, br.y - 5, br.width + 10, br.height + 10);
+			br = new Rectangle(br.x - 2, br.y - 2, br.width + 4, br.height + 4);
 			
 			for (int j = 0; j < mBlobs.size(); j++) {
 				// don't compare blobs to themselves
@@ -439,7 +427,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 				
 				Blob o = (Blob) mBlobs.get(j);
 				Rectangle or = o.rectangle;
-				or = new Rectangle(or.x - 5, or.y - 5, or.width + 10, or.height + 10);
+				or = new Rectangle(or.x - 2, or.y - 2, or.width + 4, or.height + 4);
 				
 				if (GeomUtils.doOverlap(br, or) && !GeomUtils.doContain(br, or)) {
 					// create a new Point array to hold all the points of b & o
@@ -547,12 +535,11 @@ public class VideoMonitor extends JPanel implements Runnable {
 	}
 	
 	private void findLabels(ArrayList theRects) {
-		if (blur) {
-			cv.restore(OpenCV.GRAY);
-			cv.contrast(contrast);
-			cv.threshold(threshold);
-			cv.blur(OpenCV.BLUR, 3);
-		}
+		// restore the image, apply transforms, & blur
+		cv.restore(OpenCV.GRAY);
+		cv.contrast(contrast);
+		cv.threshold(threshold);
+		cv.blur(OpenCV.BLUR, 3);
 		
 		Blob[] lablobs = cv.blobs(100, 6000, 100, true, OpenCV.MAX_VERTICES*4);
 		
@@ -584,7 +571,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 				// first find the biggest blob
 				int maxSize = 0; int maxSizeIndex = 0;
 				for (int j = 0; j < candidateBlobs.size(); j++) {
-					Blob b = (Blob) candidateBlobs.get(i);
+					Blob b = (Blob) candidateBlobs.get(j);
 					int blobSize = b.rectangle.width * b.rectangle.height;
 					if (blobSize > maxSize) {
 						maxSize = blobSize;
@@ -656,16 +643,8 @@ public class VideoMonitor extends JPanel implements Runnable {
 		thresholded = enabled;
 	}
 	
-	public void setEdgeDetection(boolean enabled) {
-		edgeDetect = enabled;
-	}
-	
-	public void setBlurred(boolean enabled) {
-		blur = enabled;
-	}
-	
-	public boolean getBlurred() {
-		return blur;
+	public Image getImage() {
+		return frame;
 	}
 	
 	public void start() {

@@ -12,7 +12,7 @@ import java.util.Date;
 public class RectangleManager {
 	public ArrayList rects, freshRects;
 	private VideoMonitor vidmon;
-	private ProjectorController projector;
+	private ProjectorView projector;
 	boolean projecting;
 	
 	public RectangleManager() {
@@ -28,7 +28,7 @@ public class RectangleManager {
 		projecting = false;
 	}
 	
-	public RectangleManager(ProjectorController theProjector) {
+	public RectangleManager(ProjectorView theProjector) {
 		rects = new ArrayList();
 		freshRects = new ArrayList();
 		projector = theProjector;
@@ -165,6 +165,10 @@ public class RectangleManager {
 		if (vidmon != null) {
 			vidmon.setRects(rects);
 		}
+		
+		if (projecting) {
+			projector.setMonitorImage(vidmon.getImage());
+		}
 	}
 	
 	// get rid of rectangles that haven't been seen in over 3 seconds
@@ -186,5 +190,9 @@ public class RectangleManager {
 	
 	public void setVideoMonitor(VideoMonitor theVidMon) {
 		vidmon = theVidMon;
+	}
+	
+	public ProjectorView getProjectorView() {
+		return projector;
 	}
 }

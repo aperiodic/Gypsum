@@ -39,10 +39,11 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 	
 	public Configuration(Gypsum _app) {
 		super("");
-		this.setResizable(false);
+		setResizable(false);
 		app = _app;
 		strings = ResourceBundle.getBundle("strings", Locale.getDefault());
 		setTitle(strings.getString("configIntroTitle"));
+
 		
 		calPoints = new Point[4];
 		numCalPoints = 0;
@@ -83,11 +84,37 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 		next.addActionListener(this);
 		buttonPane.add(next);
 		
+		vidMon = app.newVideoMonitor(320, 240);
+		vidMon.setName("vidmon");
+		vidMon.addMouseListener(this);
+		vidMon.addMouseMotionListener(this);
+		vidMon.setAlignmentX(Component.CENTER_ALIGNMENT);
+		
 		createConfigCard(0);
+		
+		app.attachMenu(this);
 		
 		this.add(deck);
 		this.add(Box.createVerticalGlue());
 		this.add(buttonPane);
+		
+		addWindowListener(new WindowAdapter() {
+							public void windowClosing(WindowEvent e) {
+								app.handleClosing(e);
+							}
+							public void windowClosed(WindowEvent e) {
+								app.handleClosed(e);
+							}
+							public void windowActivated(WindowEvent e) {
+								app.handleActivated(e);
+							}
+							public void windowDeactivated(WindowEvent e) {
+								app.handleDeactivated(e);
+							}
+							public void windowOpened(WindowEvent e) {
+								app.handleOpened(e);
+							}
+						  });
 	}
 	
 	public void startConfiguration(Properties _config) {
@@ -103,22 +130,6 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 		this.setVisible(true);
 	}
 	
-	public void startCalibration() {
-		VideoMonitor calMon = new VideoMonitor(640, 480, config);
-		Calibration newCal = new Calibration(app, this, calMon);
-	}
-	
-	public void calibrationDidComplete() {
-		panel++;
-		
-		if (configCards[panel] == null) {
-			createConfigCard(panel);
-		}
-		
-		CardLayout deckLayout = (CardLayout) deck.getLayout();
-		deckLayout.next(deck);
-	}
-	
 	public void actionPerformed(ActionEvent e) {
 		if ("next".equals(e.getActionCommand())) {
 			panel++;
@@ -129,7 +140,11 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 				this.setTitle(strings.getString("configTitle"));
 			
 			} else if (panel == 3) {
+				app.releaseVideoMonitor();
+				
 				numCalPoints = 0;
+				calPoints = new Point[4];
+				vidMon.setCalPoints(calPoints);
 				next.setEnabled(false);
 				cal = new Calibration(app, this, vidMon);
 				toFront();
@@ -137,7 +152,8 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			} else if (panel == 4) {
 				vidMon.calibrate(config, app.new fsWindowProperties());
 				cal.setVisible(false);
-					   
+				
+				app.releaseVideoMonitor();
 			}
 			
 			if (panel == configCards.length - 1) {
@@ -151,15 +167,12 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			
 			CardLayout deckLayout = (CardLayout) deck.getLayout();
 			deckLayout.next(deck);
+			deck.remove(0);
+			configCards[panel-1] = null;
+			
 		} else if ("previous".equals(e.getActionCommand())) {
 			if (panel > 0) {
 				panel--;
-			}
-			
-			if (panel == 2) {
-				numCalPoints = 0;
-				calPoints = new Point[4];
-				createConfigCard(2);
 			}
 			
 			if (panel == 0) {
@@ -167,8 +180,36 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 				next.setEnabled(true);
 			}
 			
+			if (panel == 1) {
+				app.releaseVideoMonitor();
+				configCards[2] = null;
+			}
+			
+			if (panel == 2) {
+				app.releaseVideoMonitor();
+				configCards[2] = null;
+			}
+			
+			if (panel == 3) {
+				numCalPoints = 0;
+				calPoints = new Point[4];
+				vidMon.setCalPoints(calPoints);
+				next.setEnabled(false);
+				cal.setVisible(true);
+				toFront();
+				next.setText("Next");
+				next.setActionCommand("next");
+			}
+			
+			if (configCards[panel] == null) {
+				createConfigCard(panel);
+			}
+			
 			CardLayout deckLayout = (CardLayout) deck.getLayout();
-			deckLayout.previous(deck);
+			deckLayout.next(deck);
+			deck.remove(0);
+			configCards[panel+1] = null;
+			
 		} else if ("finish".equals(e.getActionCommand())) {
 			config.setProperty("configured", "yes");
 			try {
@@ -186,9 +227,12 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			}
 			
 			this.setVisible(false);
-			vidMon.stop();
-			
-			app.configurationFinished();
+			cal.setVisible(false);
+			cal.dispose();
+			cal = null;
+			app.releaseVideoMonitor();
+			vidMon = null;
+			app.configurationFinished(config);
 			
 		} else if ("extendedL".equals(e.getActionCommand())) {
 			next.setEnabled(true);
@@ -203,6 +247,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			config.setProperty("projectorMode", "mirrored");
 			
 		} else if ("cancel".equals(e.getActionCommand())) {
+			setVisible(false);
 			app.newLecture();
 		}
 	}
@@ -378,6 +423,17 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			projectorButtonPane.add(Box.createHorizontalGlue());
 			configCards[1].add(projectorButtonPane);
 			
+			if ("extendedL".equals(config.getProperty("projectorMode"))) {
+				extendedL.setSelected(true);
+				next.setEnabled(true);
+			} else if ("mirrored".equals(config.getProperty("projectorMode"))) {
+				mirroredRadioButton.setSelected(true);
+				next.setEnabled(true);
+			} else if ("extendedR".equals(config.getProperty("projectorMode"))) {
+				extendedR.setSelected(true);
+				next.setEnabled(true);
+			}
+			
 			deck.add(configCards[1], "projectorCard");			
 			
 		} else if (index == 2) {
@@ -409,13 +465,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			
 			videoPanel.add(contrastSliderPanel);
 			videoPanel.add(Box.createHorizontalStrut(13));
-			
-			vidMon = new VideoMonitor(320, 240);
-			vidMon.setName("vidmon");
-			vidMon.addMouseListener(this);
-			vidMon.addMouseMotionListener(this);
-			vidMon.setAlignmentX(Component.CENTER_ALIGNMENT);
-			videoPanel.add(vidMon);
+			videoPanel.add(app.getVideoMonitor());
 			videoPanel.add(Box.createHorizontalStrut(13));
 			
 			JPanel thresholdSliderPanel = new JPanel();
@@ -435,6 +485,22 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			videoPanel.add(Box.createHorizontalStrut(22));
 			configCards[2].add(videoPanel);
 			
+			if (config.getProperty("contrast") != null) {
+				int contrast = java.lang.Integer.parseInt(config.getProperty("contrast"));
+				contrastSlider.setValue(contrast);
+				vidMon.setContrast(contrast);
+				config.setProperty("contrast", "" + contrast);
+				next.setEnabled(true);
+			}
+			
+			if (config.getProperty("threshold") != null) {
+				int threshold = java.lang.Integer.parseInt(config.getProperty("threshold"));
+				thresholdSlider.setValue(threshold);
+				vidMon.setThreshold(threshold);
+				config.setProperty("threshold", "" + threshold);
+				next.setEnabled(true);
+			}
+			
 			deck.add(configCards[2], "imageAdjustCard");
 		} else if (index == 3) {
 			// -- FOURTH CONFIGURATION CARD - CALIBRATION -- //
@@ -449,7 +515,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			JPanel vidPanel = new JPanel();
 			vidPanel.setLayout(new BoxLayout(vidPanel, BoxLayout.X_AXIS));
 			vidPanel.add(Box.createHorizontalStrut(90));
-			vidPanel.add(vidMon);
+			vidPanel.add(app.getVideoMonitor());
 			vidPanel.add(Box.createHorizontalStrut(90));
 			
 			configCards[3].add(vidPanel);

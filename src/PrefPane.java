@@ -7,14 +7,16 @@ import java.awt.event.*;
 import javax.swing.*;
 
 public class PrefPane extends JFrame {
-    protected JButton okButton;
+    protected JButton apply, cancel, ok;
     protected JLabel prefsText;
 
     public PrefPane()
     {
 		super();
+		
+		this.getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.Y_AXIS));
 
-        this.getContentPane().setLayout(new BorderLayout(10, 10));
+        /*this.getContentPane().setLayout(new BorderLayout(10, 10));
         prefsText = new JLabel ("Preferences");
         JPanel textPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
         textPanel.add(prefsText);
@@ -27,8 +29,8 @@ public class PrefPane extends JFrame {
 			public void actionPerformed(ActionEvent newEvent) {
 				setVisible(false);
 			}	
-		});
-        this.getContentPane().add(buttonPanel, BorderLayout.SOUTH);
+		});*/
+		
 		setSize(390, 129);
 		setLocation(20, 40);
     }
