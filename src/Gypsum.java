@@ -163,14 +163,6 @@ public class Gypsum extends JFrame {
 		return config;
 	}
 	
-	public void adjustor() {
-		adjustor = new VideoAdjustor(this, config, strings.getString("viewAdjustorItem"));
-		
-		adjustor.setSize(740, 502);
-		adjustor.setLocation(0, 0);
-		adjustor.setVisible(true);
-	}
-	
 	public void	newLecture() {
 		newlect = new NewLecture(this);
 		newlect.setVisible(true);
@@ -191,8 +183,6 @@ public class Gypsum extends JFrame {
 	
 	private void dummyConfig() {
 		config = new Properties();
-		config.setProperty("threshold", "40");
-		config.setProperty("contrast", "50");
 		config.setProperty("projectorMode", "extendedR");
 		config.setProperty("perspTLx", "240"); config.setProperty("perspTLy", "160");
 		config.setProperty("perspTRx", "400"); config.setProperty("perspTRy", "160");
@@ -378,7 +368,6 @@ public class Gypsum extends JFrame {
 		saveAsAction = new saveAsActionClass( strings.getString("saveAsItem") );
 		configureAction = new configureActionClass(strings.getString("configureItem"));
 		
-		adjustorAction = new adjustorActionClass( strings.getString("viewAdjustorItem"));
 	}
 	
 	public void addMenus() {
@@ -396,10 +385,6 @@ public class Gypsum extends JFrame {
 		fileMenu.getItem(4).setEnabled(false);
 		
 		mainMenuBar.add(fileMenu);
-		
-		windowMenu = new JMenu(strings.getString("windowMenu"));
-		windowMenu.add(new JMenuItem(adjustorAction));
-		mainMenuBar.add(windowMenu);
 		
 		setJMenuBar(mainMenuBar);
 	}
@@ -472,17 +457,7 @@ public class Gypsum extends JFrame {
 			configure();
 		}
 	}
-	
-	public class adjustorActionClass extends AbstractAction {
-		public adjustorActionClass(String text) {
-			super(text);
-		}
-		
-		public void actionPerformed(ActionEvent e) {
-			adjustor();
-		}
-	}
-	
+
 	 public static void main(String args[]) {
 		new Gypsum();
 	 }

@@ -52,7 +52,6 @@ public class VideoMonitor extends JPanel implements Runnable {
 	private AffineTransform vidTranslate, vidScale;
 	private Point[] calPoints;
 	
-	private int contrast, threshold;
 	private boolean thresholded, shouldStop, calibrated, failedCal, blur;
 	
 	VideoMonitor() {
@@ -103,9 +102,6 @@ public class VideoMonitor extends JPanel implements Runnable {
 		
 		init();
 		
-		contrast = java.lang.Integer.parseInt(cfg.getProperty("contrast"));
-		threshold = java.lang.Integer.parseInt(cfg.getProperty("threshold"));
-		
 		Gypsum.fsWindowProperties fswp = theApp.new fsWindowProperties();
 		
 		if (cfg.getProperty("perspTLx") != null) {
@@ -145,8 +141,6 @@ public class VideoMonitor extends JPanel implements Runnable {
 		
 		cv = new OpenCV();
 		cv.capture(WIDTH, HEIGHT);
-		contrast = 0;
-		threshold = 150;
 		thresholded = false;
 		calibrated = false;
 		failedCal = false;
@@ -251,7 +245,6 @@ public class VideoMonitor extends JPanel implements Runnable {
 				// convert the image to grayscale, apply contrast
 				// and threshold filters
 				cv.convert(OpenCV.GRAY);
-				cv.contrast(contrast);
 				
 				if (thresholded) {
 					// threshold, then save the image
@@ -566,10 +559,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 	}
 	
 	private void findLabels(ArrayList theRects) {
-		// restore the image, apply transforms, & blur
-		//cv.restore(OpenCV.GRAY);
-		//cv.contrast(contrast);
-		//cv.threshold(threshold);
+		// blur the image so small gaps in the label are closed
 		cv.blur(OpenCV.BLUR, 3);
 		
 		Blob[] lablobs = cv.blobs(100, 6000, 100, true, OpenCV.MAX_VERTICES*4);
@@ -661,14 +651,6 @@ public class VideoMonitor extends JPanel implements Runnable {
 			r.x = origin.x; r.y = origin.y;
 			r.width = r.rectangle.width; r.height = r.rectangle.height;
 		}
-	}
-	
-	public void setContrast(int newContrast) {
-		contrast = newContrast;
-	}
-	
-	public void setThreshold(int newThreshold) {
-		threshold = newThreshold;
 	}
 	
 	public void setThresholded(boolean enabled) {

@@ -83,7 +83,7 @@ public class ProjectorView extends JFrame {
 		for (int i = 0; i < vidRects.size(); i++) {
 			Rect r = (Rect) vidRects.get(i);
 			g.setColor(new Color(0, 255, 0));
-			g.drawRect(r.x/2 + vidYShift, r.y/2 + vidYShift, r.width/2, r.height/2);
+			g.drawRect(r.x/2 + vidXShift, r.y/2 + vidYShift, r.width/2, r.height/2);
 		}
 		
 		for (int i = 0; i < rects.size(); i++) {

@@ -59,7 +59,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 		
 		this.setLayout(new BoxLayout(this.getContentPane(), BoxLayout.Y_AXIS));
 		deck = new JPanel(new CardLayout());
-		configCards = new JPanel[5];
+		configCards = new JPanel[4];
 		
 		// build a pane to hold the three buttons at the bottom
 		buttonPane = new JPanel();
@@ -139,9 +139,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 				next.setEnabled(false);
 				this.setTitle(strings.getString("configTitle"));
 			
-			} else if (panel == 3) {
-				app.releaseVideoMonitor();
-				
+			} else if (panel == 2) {
 				numCalPoints = 0;
 				calPoints = new Point[4];
 				vidMon.setCalPoints(calPoints);
@@ -149,7 +147,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 				cal = new Calibration(app, this, vidMon);
 				toFront();
 				
-			} else if (panel == 4) {
+			} else if (panel == 3) {
 				vidMon.calibrate(config, app.new fsWindowProperties());
 				cal.setVisible(false);
 				
@@ -183,14 +181,12 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			if (panel == 1) {
 				app.releaseVideoMonitor();
 				configCards[2] = null;
+				if (cal != null) {
+					cal.setVisible(false);
+				}
 			}
 			
 			if (panel == 2) {
-				app.releaseVideoMonitor();
-				configCards[2] = null;
-			}
-			
-			if (panel == 3) {
 				numCalPoints = 0;
 				calPoints = new Point[4];
 				vidMon.setCalPoints(calPoints);
@@ -253,17 +249,6 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 	}
 	
 	public void stateChanged(ChangeEvent e) {
-		JComponent theComponent = (JComponent) e.getSource();
-		
-		if ("contrastSlider".equals(theComponent.getName())) {
-			JSlider cSlider = (JSlider) theComponent;
-			vidMon.setContrast(cSlider.getValue());
-			config.setProperty("contrast", "" + cSlider.getValue());
-		} else if ("thresholdSlider".equals(theComponent.getName())) {
-			JSlider tSlider = (JSlider) theComponent;
-			vidMon.setThreshold(tSlider.getValue());
-			config.setProperty("threshold", "" + tSlider.getValue());
-		}
 	}
 	
 	public void mousePressed(MouseEvent e) {
@@ -271,7 +256,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			vidMon.setThresholded(true);
 		}
 		
-		if ("vidmon".equals(e.getComponent().getName()) && panel == 3) {
+		if ("vidmon".equals(e.getComponent().getName()) && panel == 2) {
 			if (numCalPoints < 4) {
 				calPoints[numCalPoints] = new Point(e.getX(), e.getY());
 				numCalPoints++;
@@ -308,7 +293,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 	
 	public void mouseReleased(MouseEvent e) {
 		if ("thresholdSlider".equals(e.getComponent().getName())) {
-			vidMon.setThresholded(false);
+			//vidMon.setThresholded(false);
 		}
 		
 		movingCalPoint = false;
@@ -436,7 +421,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			
 			deck.add(configCards[1], "projectorCard");			
 			
-		} else if (index == 2) {
+		/*} else if (index == 2) {
 			// -- THIRD CONFIGURATION CARD - VIDEO ADJUSTMENT -- //
 			configCards[2] = new JPanel();
 			configCards[2].setLayout(new BoxLayout(configCards[2], BoxLayout.Y_AXIS));
@@ -454,7 +439,6 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			JPanel contrastSliderPanel = new JPanel();
 			contrastSliderPanel.setLayout(new BoxLayout(contrastSliderPanel, BoxLayout.Y_AXIS));
 			JSlider contrastSlider = new JSlider(JSlider.VERTICAL, -128, 128, 0);
-			config.setProperty("contrast", "0");
 			contrastSlider.setName("contrastSlider");
 			contrastSlider.addChangeListener(this);
 			contrastSliderPanel.add(contrastSlider);
@@ -471,7 +455,6 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			JPanel thresholdSliderPanel = new JPanel();
 			thresholdSliderPanel.setLayout(new BoxLayout(thresholdSliderPanel, BoxLayout.Y_AXIS));
 			JSlider thresholdSlider = new JSlider(JSlider.VERTICAL, 0, 255, 120);
-			config.setProperty("threshold", "120");
 			thresholdSlider.setName("thresholdSlider");
 			thresholdSlider.addChangeListener(this);
 			thresholdSlider.addMouseListener(this);
@@ -501,16 +484,16 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 				next.setEnabled(true);
 			}
 			
-			deck.add(configCards[2], "imageAdjustCard");
-		} else if (index == 3) {
-			// -- FOURTH CONFIGURATION CARD - CALIBRATION -- //
-			configCards[3] = new JPanel();
-			configCards[3].setLayout(new BoxLayout(configCards[3], BoxLayout.Y_AXIS));
+			deck.add(configCards[2], "imageAdjustCard");*/
+		} else if (index == 2) {
+			// -- THIRD CONFIGURATION CARD - CALIBRATION -- //
+			configCards[2] = new JPanel();
+			configCards[2].setLayout(new BoxLayout(configCards[2], BoxLayout.Y_AXIS));
 			
 			JLabel calibrationMessage = new JLabel(strings.getString("calibrationMessage"));
 			calibrationMessage.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 			calibrationMessage.setAlignmentX(Component.CENTER_ALIGNMENT);
-			configCards[3].add(calibrationMessage);
+			configCards[2].add(calibrationMessage);
 			
 			JPanel vidPanel = new JPanel();
 			vidPanel.setLayout(new BoxLayout(vidPanel, BoxLayout.X_AXIS));
@@ -518,20 +501,20 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			vidPanel.add(app.getVideoMonitor());
 			vidPanel.add(Box.createHorizontalStrut(90));
 			
-			configCards[3].add(vidPanel);
+			configCards[2].add(vidPanel);
 			
-			deck.add(configCards[3], "calibrationCard");
-		} else if (index == 4) {
-			// -- FIFTH CARD - FINISHED -- //
-			configCards[4] = new JPanel();
-			configCards[4].setLayout(new BoxLayout(configCards[4], BoxLayout.Y_AXIS));
+			deck.add(configCards[2], "calibrationCard");
+		} else if (index == 3) {
+			// -- FOURTH CARD - FINISHED -- //
+			configCards[3] = new JPanel();
+			configCards[3].setLayout(new BoxLayout(configCards[3], BoxLayout.Y_AXIS));
 			
 			JLabel imageMessage = new JLabel(strings.getString("finishedMessage"));
 			imageMessage.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 			imageMessage.setAlignmentX(Component.CENTER_ALIGNMENT);
-			configCards[4].add(imageMessage);
+			configCards[3].add(imageMessage);
 			
-			deck.add(configCards[4], "finishedCard");
+			deck.add(configCards[3], "finishedCard");
 		}
 	}
 	
