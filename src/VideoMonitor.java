@@ -32,6 +32,9 @@ public class VideoMonitor extends JPanel implements Runnable {
 	int MAX_BLOB_AREA;
 	int MIN_BLOB_AREA;
 	
+	int  S = WIDTH/8;
+	float T = 0.17f;
+	
 	Thread t;
 	Image frame;
 	
@@ -167,6 +170,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 		MIN_RECT_AREA = WIDTH*HEIGHT/60;
 		MAX_BLOB_AREA = WIDTH*HEIGHT/2;
 		MIN_BLOB_AREA = 100;
+		S = WIDTH/8;
 	}
 	
 	public void setRects(ArrayList someRects) {
@@ -244,14 +248,15 @@ public class VideoMonitor extends JPanel implements Runnable {
 				
 				cv.read();
 				
-				// convert the image to greyscale, apply contrast
+				// convert the image to grayscale, apply contrast
 				// and threshold filters
 				cv.convert(OpenCV.GRAY);
 				cv.contrast(contrast);
 				
 				if (thresholded) {
 					// threshold, then save the image
-					cv.threshold(threshold);
+					//cv.threshold(threshold);
+					adaptiveThreshold();
 					
 					MemoryImageSource mis = new MemoryImageSource(cv.width, cv.height, cv.pixels(), 0, cv.width);
 					frame = createImage(mis);
@@ -260,7 +265,8 @@ public class VideoMonitor extends JPanel implements Runnable {
 					MemoryImageSource mis = new MemoryImageSource(cv.width, cv.height, cv.pixels(), 0, cv.width);
 					frame = createImage(mis);
 					
-					cv.threshold(threshold);
+					//cv.threshold(threshold);
+					adaptiveThreshold();
 				}
 				
 				// find the rectangles in the image
@@ -364,6 +370,67 @@ public class VideoMonitor extends JPanel implements Runnable {
 		theConfig.setProperty("perspBLy", "" + BL.y);
 		
 		calibrated = true;		
+	}
+	
+	private void adaptiveThreshold() {
+		cv.invert();
+		long sum = 0;
+		int count = 0;
+		int index;
+		int x1, y1, x2, y2;
+		int s2 = S/2;
+		
+		int[] input = cv.pixels();
+		long[] integral = new long[WIDTH * HEIGHT];
+		int[] output = new int[WIDTH * HEIGHT];
+		
+		// find the integral values
+		for (int i = 0; i < WIDTH; i++) {
+			sum = 0;
+			
+			for (int j = 0; j < HEIGHT; j++) {
+				index = j*WIDTH + i;
+				sum += input[index] & 0xff;
+				if (i == 0) {
+					integral[index] = sum;
+				} else {
+					integral[index] = integral[index-1] + sum;
+				}
+			}
+		}
+		
+		// do the thresholding
+		for (int i = 0; i < WIDTH; i++) {
+			for (int j = 0; j < HEIGHT; j++) {
+				index = j*WIDTH+i;
+				
+				// set up an S x S region
+				x1 = i-s2; x2 = i+s2;
+				y1 = j-s2; y2 = j+s2;
+				
+				// check border
+				if (x1 < 0) x1 = 0;
+				if (x2 >= WIDTH) x2 = WIDTH-1;
+				if (y1 < 0) y1 = 0;
+				if (y2 >= HEIGHT) y2 = HEIGHT-1;
+				
+				count = (x2-x1)*(y2-y1);
+				
+				sum = integral[y2*WIDTH + x2] -
+				integral[y1*WIDTH + x2] -
+				integral[y2*WIDTH + x1] +
+				integral[y1*WIDTH + x1];
+				
+				if ((long)((input[index] & 0xff)*count) < (long)(sum*(1.0-T))) {
+					output[index] = 0;
+				} else {
+					output[index] = 0xffffff;
+				}
+			}
+		}
+		
+		cv.copy(output, WIDTH, 0, 0, WIDTH, HEIGHT, 0, 0, WIDTH, HEIGHT);
+		cv.invert();
 	}
 	
 	private ArrayList findRectangles(Blob[] blobs) {
@@ -500,9 +567,9 @@ public class VideoMonitor extends JPanel implements Runnable {
 	
 	private void findLabels(ArrayList theRects) {
 		// restore the image, apply transforms, & blur
-		cv.restore(OpenCV.GRAY);
-		cv.contrast(contrast);
-		cv.threshold(threshold);
+		//cv.restore(OpenCV.GRAY);
+		//cv.contrast(contrast);
+		//cv.threshold(threshold);
 		cv.blur(OpenCV.BLUR, 3);
 		
 		Blob[] lablobs = cv.blobs(100, 6000, 100, true, OpenCV.MAX_VERTICES*4);
