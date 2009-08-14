@@ -38,31 +38,22 @@ public class Calibration extends JFrame {
 	public void paint(Graphics g) {
 		
 		Gypsum.fsWindowProperties fswp = gypsum.new fsWindowProperties();
+
+		g.setColor(new Color(255, 255, 0));
 		
-		if (stage == 0) {
-			g.setColor(new Color(255, 255, 0));
-			
-			int partitions = 3;
-			int unit = fswp.height/partitions;
-			int leftMargin = unit + (fswp.width-fswp.height)/2;
-			int rectWidth = 24;
-			
-			g.fillRect(leftMargin - rectWidth/2, unit - rectWidth/2, 
-					   rectWidth, rectWidth);
-			g.fillRect(leftMargin + (partitions-2) * unit - rectWidth/2, unit - rectWidth/2, 
-					   rectWidth, rectWidth);
-			g.fillRect(leftMargin + (partitions-2) * unit - rectWidth/2, unit * (partitions-1) - rectWidth/2, 
-					   rectWidth, rectWidth);
-			g.fillRect(leftMargin - rectWidth/2, unit * (partitions-1) - rectWidth/2, 
-					   rectWidth, rectWidth);
-		} else if (stage == 1) {
-			g.setColor(new Color(255, 0, 0));
-			g.fillRect(0, fswp.height/4 - 3, fswp.width, 6);
-			g.setColor(new Color(0, 255, 0));
-			g.fillRect(0, fswp.height/2 - 3, fswp.width, 6);
-			g.setColor(new Color(0, 0, 255));
-			g.fillRect(0, fswp.height*3/4 - 3, fswp.width, 6);			
-		}
+		int partitions = 3;
+		int unit = fswp.height/partitions;
+		int leftMargin = unit + (fswp.width-fswp.height)/2;
+		int rectWidth = 24;
+		
+		g.fillRect(leftMargin - rectWidth/2, unit - rectWidth/2, 
+				   rectWidth, rectWidth);
+		g.fillRect(leftMargin + (partitions-2) * unit - rectWidth/2, unit - rectWidth/2, 
+				   rectWidth, rectWidth);
+		g.fillRect(leftMargin + (partitions-2) * unit - rectWidth/2, unit * (partitions-1) - rectWidth/2, 
+				   rectWidth, rectWidth);
+		g.fillRect(leftMargin - rectWidth/2, unit * (partitions-1) - rectWidth/2, 
+				   rectWidth, rectWidth);
 		
 	}
 	

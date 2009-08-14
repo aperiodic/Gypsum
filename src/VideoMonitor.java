@@ -114,38 +114,22 @@ public class VideoMonitor extends JPanel implements Runnable {
 								 java.lang.Integer.parseInt(cfg.getProperty("perspBRy")));
 			Point BL = new Point(java.lang.Integer.parseInt(cfg.getProperty("perspBLx")), 
 								 java.lang.Integer.parseInt(cfg.getProperty("perspBLy")));
-			int sideLength = java.lang.Integer.parseInt(cfg.getProperty("perspSideLength"));
 			
-			// create a perspective transform that maps a square to the found quadrilateral
-			// the inverse of this transform will be used to correct the perspective distortion
-			// on the video input
-			perspCorrect = PerspectiveTransform.getQuadToQuad(TL.x, TL.y,
-															  TL.x + sideLength, TL.y,
-															  TL.x + sideLength, TL.y + sideLength,
-															  TL.x, TL.y + sideLength,
-															  
-															  TL.x, TL.y,
-															  TR.x, TR.y,
-															  BR.x, BR.y,	
-															  BL.x, BL.y);
-			
-			// create an affine transform that will translate & scale the
-			// perspective corrected points into projector coordinates
-			double videoScale = (fswp.height/3.0)/(double)sideLength;
-			double projectorScale = (float)sideLength/(fswp.height/3.0);
-			
+			double unit = fswp.height/3.0;
 			int widthMargin = (fswp.width - fswp.height)/2;
-			double vidWidthMargin = widthMargin * projectorScale;
 			
-			Point projectorOrigin = new Point();
-			projectorOrigin.setLocation(TL.x - sideLength - vidWidthMargin, 
-										(double)TL.y - sideLength);
-			
-			vidTranslate = AffineTransform.getTranslateInstance(-projectorOrigin.x,
-																-projectorOrigin.y);
-			vidScale = AffineTransform.getScaleInstance(videoScale, videoScale);
-			perspCorrect.concatenate(vidTranslate);
-			perspCorrect.concatenate(vidScale);
+			// create a perspective transform that maps the projector coordinates of the 
+			// calibration squares to the found quadrilateral. the inverse of this transform
+			// will be used to correct the perspective distortion on the video input
+			perspCorrect = PerspectiveTransform.getQuadToQuad(unit + widthMargin, unit,
+															  unit*2 + widthMargin, unit,
+															  unit*2 + widthMargin, unit*2,
+															  unit + widthMargin, unit*2,
+															  
+																TL.x, TL.y,
+																TR.x, TR.y,
+																BR.x, BR.y,	
+																BL.x, BL.y);
 			
 			calibrated = true;
 		}
@@ -349,40 +333,21 @@ public class VideoMonitor extends JPanel implements Runnable {
 			}
 		}
 		
-		int leftSideLength = BL.y - TL.y;
-		int rightSideLength = BR.y - TR.y;
-		int sideLength = (leftSideLength > rightSideLength) ? leftSideLength : rightSideLength;
-		
-		// create a perspective transform that maps a square to the found quadrilateral
-		// the inverse of this transform will be used to correct the perspective distortion
-		// on the video input
-		perspCorrect = PerspectiveTransform.getQuadToQuad(TL.x, TL.y,
-														  TL.x + sideLength, TL.y,
-														  TL.x + sideLength, TL.y + sideLength,
-														  TL.x, TL.y + sideLength,
-														  
-														  TL.x, TL.y,
-														  TR.x, TR.y,
-														  BR.x, BR.y,	
-														  BL.x, BL.y);
-		
-		// create an affine transform that will translate & scale the
-		// perspective corrected points into projector coordinates
-		double videoScale = (fswp.height/3.0)/(double)sideLength;
-		double projectorScale = (float)sideLength/(fswp.height/3.0);
-		
+		double unit = fswp.height/3.0;
 		int widthMargin = (fswp.width - fswp.height)/2;
-		double vidWidthMargin = widthMargin * projectorScale;
 		
-		Point projectorOrigin = new Point();
-		projectorOrigin.setLocation(TL.x - sideLength - vidWidthMargin, 
-									(double)TL.y - sideLength);
-		
-		vidTranslate = AffineTransform.getTranslateInstance(-projectorOrigin.x,
-															-projectorOrigin.y);
-		vidScale = AffineTransform.getScaleInstance(videoScale, videoScale);
-		perspCorrect.concatenate(vidTranslate);
-		perspCorrect.concatenate(vidScale);
+		// create a perspective transform that maps the projector coordinates of the 
+		// calibration squares to the found quadrilateral. the inverse of this transform
+		// will be used to correct the perspective distortion on the video input
+		perspCorrect = PerspectiveTransform.getQuadToQuad(unit + widthMargin, unit,
+														  unit*2 + widthMargin, unit,
+														  unit*2 + widthMargin, unit*2,
+														  unit + widthMargin, unit*2,
+														  
+															TL.x, TL.y,
+															TR.x, TR.y,
+															BR.x, BR.y,	
+															BL.x, BL.y);
 		
 		// save the perspective transform parameters in the given config
 		theConfig.setProperty("perspTLx", "" + TL.x); 
@@ -396,8 +361,6 @@ public class VideoMonitor extends JPanel implements Runnable {
 		
 		theConfig.setProperty("perspBLx", "" + BL.x);
 		theConfig.setProperty("perspBLy", "" + BL.y);
-		theConfig.setProperty("perspSideLength", "" + sideLength);
-		
 		
 		calibrated = true;		
 	}
@@ -599,13 +562,16 @@ public class VideoMonitor extends JPanel implements Runnable {
 	
 	private void convertRectsToScreenCoords(ArrayList theRects) {
 		for (int i = 0; i < theRects.size(); i++) {
-			Rect r = (Rect) theRects.get(i);
+ 			Rect r = (Rect) theRects.get(i);
 			Point origin, botright;
 			origin = r.rectangle.getLocation();
 			botright = new Point(r.x + r.width, r.y + r.height);
 			
-			perspCorrect.transform(origin, origin);
-			perspCorrect.transform(botright, botright);
+			try {
+				perspCorrect.inverseTransform(origin, origin);
+				perspCorrect.inverseTransform(botright, botright);
+			} catch (java.awt.geom.NoninvertibleTransformException e) {}
+			
 			
 			r.rectangle = new Rectangle(origin.x, origin.y, botright.x-origin.x, botright.y-origin.y);
 			r.x = origin.x; r.y = origin.y;
@@ -620,10 +586,8 @@ public class VideoMonitor extends JPanel implements Runnable {
 			origin = r.rectangle.getLocation();
 			botright = new Point(r.x + r.width, r.y + r.height);
 			
-			try {
-				perspCorrect.inverseTransform(origin, origin);
-				perspCorrect.inverseTransform(botright, botright);
-			} catch (java.awt.geom.NoninvertibleTransformException e) {}
+			perspCorrect.transform(origin, origin);
+			perspCorrect.transform(botright, botright);
 			
 			r.rectangle = new Rectangle(origin.x, origin.y, botright.x-origin.x, botright.y-origin.y);
 			r.x = origin.x; r.y = origin.y;
