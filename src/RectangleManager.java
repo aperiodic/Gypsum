@@ -192,6 +192,12 @@ public class RectangleManager {
 		vidmon = theVidMon;
 	}
 	
+	public void setVidRects(ArrayList vrects) {
+		if (projecting) {
+			projector.setVidRects(vrects);
+		}
+	}
+	
 	public ProjectorView getProjectorView() {
 		return projector;
 	}

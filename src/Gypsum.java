@@ -186,10 +186,7 @@ public class Gypsum extends JFrame {
 		fileMenu.getItem(3).setEnabled(true);
 		fileMenu.getItem(4).setEnabled(true);
 	
-		add(vidmon);
 		rectManager.setVideoMonitor(vidmon);
-		setSize(640, 480);
-		setVisible(true);
 	}
 	
 	private void dummyConfig() {

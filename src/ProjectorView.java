@@ -21,12 +21,13 @@ public class ProjectorView extends JFrame {
 	protected Gypsum app;
 	protected Image[] images;
 	protected Image monitor;
-	protected ArrayList rects;
+	protected ArrayList rects, vidRects;
 	
 	public ProjectorView(Lecture theLecture, Gypsum theApp) {
 		app = theApp;
 		lecture = theLecture;
 		rects = new ArrayList();
+		vidRects = new ArrayList();
 		images = new Image[6];
 		
 		for (int i = 0; i < 6; i++) {
@@ -73,8 +74,16 @@ public class ProjectorView extends JFrame {
 		g.setColor(new Color(0, 0, 0));
 		g.fillRect(0, 0, getWidth(), getHeight());
 		
+		int vidXShift = getWidth()-330; int vidYShift = 10;
+		
 		if (monitor != null) {
-			g.drawImage(monitor, getWidth()-320, 0, 320, 240, this);
+			g.drawImage(monitor, vidXShift, vidYShift, 320, 240, this);
+		}
+		
+		for (int i = 0; i < vidRects.size(); i++) {
+			Rect r = (Rect) vidRects.get(i);
+			g.setColor(new Color(0, 255, 0));
+			g.drawRect(r.x/2 + vidYShift, r.y/2 + vidYShift, r.width/2, r.height/2);
 		}
 		
 		for (int i = 0; i < rects.size(); i++) {
@@ -119,5 +128,9 @@ public class ProjectorView extends JFrame {
 		monitor = mon;
 		
 		repaint();
+	}
+	
+	public void setVidRects(ArrayList vRects) {
+		vidRects = vRects;
 	}
 }

@@ -184,6 +184,7 @@ public class VideoMonitor extends JPanel implements Runnable {
 		
 		if (calibrated) {
 			convertRectsToVideoCoords(rectangles);
+			rectManager.setVidRects(rectangles);
 		}
 	}
 	
