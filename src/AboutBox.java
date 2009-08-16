@@ -10,7 +10,7 @@ import javax.swing.*;
 
 public class AboutBox extends JFrame implements ActionListener {
     protected JLabel titleLabel, aboutLabel[];
-    protected static int labelCount = 8;
+    protected static int labelCount = 4;
     protected static int aboutWidth = 280;
     protected static int aboutHeight = 230;
     protected static int aboutTop = 200;
@@ -30,26 +30,29 @@ public class AboutBox extends JFrame implements ActionListener {
         if (titleFont == null) {
             titleFont = new Font("SansSerif", Font.BOLD, 14);
         }
-        bodyFont  = new Font("Lucida Grande", Font.PLAIN, 10);
+        bodyFont  = new Font("Lucida Grande", Font.BOLD, 12);
         if (bodyFont == null) {
-            bodyFont = new Font("SansSerif", Font.PLAIN, 10);
+            bodyFont = new Font("SansSerif", Font.BOLD, 12);
         }
 		
-        this.getContentPane().setLayout(new BorderLayout(15, 15));
-	
+        this.getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.Y_AXIS));
+		
+		add(Box.createVerticalStrut(10));
+		java.net.URL appIconURL = Gypsum.class.getResource("images/aboutAppIcon.png");
+		ImageIcon appIcon = new ImageIcon(appIconURL);
+		JLabel iconLabel = new JLabel(appIcon);
+		iconLabel.setHorizontalAlignment(JLabel.CENTER);
+		iconLabel.setBorder(BorderFactory.createEmptyBorder(0, 15, 0, 0));
+		this.add(iconLabel);
+		
         aboutLabel = new JLabel[labelCount];
-        aboutLabel[0] = new JLabel("");
-        aboutLabel[1] = new JLabel(resbundle.getString("frameConstructor"));
-        aboutLabel[1].setFont(titleFont);
-        aboutLabel[2] = new JLabel(resbundle.getString("appVersion"));
+        aboutLabel[0] = new JLabel(resbundle.getString("frameConstructor"));
+        aboutLabel[0].setFont(titleFont);
+        aboutLabel[1] = new JLabel(resbundle.getString("appVersion"));
+        aboutLabel[1].setFont(bodyFont);
+        aboutLabel[2] = new JLabel(resbundle.getString("copyright"));
         aboutLabel[2].setFont(bodyFont);
-        aboutLabel[3] = new JLabel("");
-        aboutLabel[4] = new JLabel("");
-        aboutLabel[5] = new JLabel("JDK " + System.getProperty("java.version"));
-        aboutLabel[5].setFont(bodyFont);
-        aboutLabel[6] = new JLabel(resbundle.getString("copyright"));
-        aboutLabel[6].setFont(bodyFont);
-        aboutLabel[7] = new JLabel("");		
+        aboutLabel[3] = new JLabel("");		
 		
         Panel textPanel2 = new Panel(new GridLayout(labelCount, 1));
         for (int i = 0; i<labelCount; i++) {
@@ -57,7 +60,8 @@ public class AboutBox extends JFrame implements ActionListener {
             textPanel2.add(aboutLabel[i]);
         }
         this.getContentPane().add (textPanel2, BorderLayout.CENTER);
-        this.pack();
+		add(Box.createVerticalStrut(10));
+		this.pack();
         this.setLocation(aboutLeft, aboutTop);
         this.setSize(aboutWidth, aboutHeight);
     }

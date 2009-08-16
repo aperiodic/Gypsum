@@ -688,7 +688,7 @@ public class VideoMonitor extends JPanel implements Runnable {
             GraphicsConfiguration gc = gs.getDefaultConfiguration();
             bimage = gc.createCompatibleImage(image.getWidth(null), image.getHeight(null), Transparency.OPAQUE);
         } catch (HeadlessException e) {
-            // The system does not have a screen
+            // there's no point in running this application headlessly. ignore!
         }
 		
         if (bimage == null) {

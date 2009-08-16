@@ -28,19 +28,7 @@ public class ProjectorView extends JFrame {
 		lecture = theLecture;
 		rects = new ArrayList();
 		vidRects = new ArrayList();
-		images = new Image[6];
-		
-		for (int i = 0; i < 6; i++) {
-			if (lecture.images[i].equals("")) {
-				continue;
-			}
-			File imageFile = new File(lecture.images[i]);
-			try {
-				images[i] = (Image) ImageIO.read(imageFile);
-			} catch (java.io.IOException e) {
-				System.out.println("there was an IO error while trying to load the image " + lecture.images[i] + ". Please make sure the file is readable and try again");
-			}
-		}
+		images = lecture.images;
 		
 		Gypsum.fsWindowProperties fswp = app.new fsWindowProperties();
 		
@@ -88,7 +76,7 @@ public class ProjectorView extends JFrame {
 		
 		for (int i = 0; i < rects.size(); i++) {
 			Rect r = (Rect) rects.get(i);
-			if (r.label > 0) {
+			if (r.label > 0 && r.label <= images.length) {
 				g.drawImage(images[r.label-1], r.x, r.y, r.width, r.height, this);
 			}
 		}
@@ -132,5 +120,9 @@ public class ProjectorView extends JFrame {
 	
 	public void setVidRects(ArrayList vRects) {
 		vidRects = vRects;
+	}
+	
+	public Lecture getLecture() {
+		return lecture;
 	}
 }

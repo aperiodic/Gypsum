@@ -215,11 +215,11 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 					config.store(configFile, "");
 					configFile.close();
 				} catch (java.io.IOException ioe) {
-					System.err.println("There was an IO error while trying to write the config file");
+					app.showError("An error ocurred while trying to write to the configuration file.\nPlease restart Gypsum", ioe);
 				}
 				
 			} catch (java.io.FileNotFoundException fnf) {
-				System.err.println("There was an error while trying to create the configuration file");
+				app.showError("Gypsum was unable to create the configuration file.", fnf);
 			}
 			
 			this.setVisible(false);
@@ -314,7 +314,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			configCards[0] = new JPanel();
 			configCards[0].setLayout(new BoxLayout(configCards[0], BoxLayout.Y_AXIS));
 			
-			java.net.URL crystalIconURL = Gypsum.class.getResource("images/configCrystal.png");
+			java.net.URL crystalIconURL = Gypsum.class.getResource("images/configAppIcon.png");
 			ImageIcon appIcon = new ImageIcon(crystalIconURL);
 			JLabel iconLabel = new JLabel(appIcon);
 			iconLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));

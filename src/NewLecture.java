@@ -16,12 +16,13 @@ import javax.swing.*;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import javax.imageio.ImageIO;
 
 public class NewLecture extends JFrame implements ActionListener {
 	protected Gypsum app;
 	private JList images;
 	private DefaultListModel model;
-	private JButton start, removeImage;
+	private JButton start, addImage, removeImage;
 	private int from;
 	public String[] files;
 	
@@ -88,10 +89,10 @@ public class NewLecture extends JFrame implements ActionListener {
 		JPanel buttonsPane = new JPanel();
 		buttonsPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
 		
-		JButton addImageButton = new JButton(strings.getString("addImageButton"));
-		addImageButton.setActionCommand("addImages");
-		addImageButton.addActionListener(this);
-		buttonsPane.add(addImageButton);
+		addImage = new JButton(strings.getString("addImageButton"));
+		addImage.setActionCommand("addImages");
+		addImage.addActionListener(this);
+		buttonsPane.add(addImage);
 		
 		removeImage = new JButton(strings.getString("removeImageButton"));
 		removeImage.setActionCommand("removeImage");
@@ -153,13 +154,21 @@ public class NewLecture extends JFrame implements ActionListener {
 			FileDialog fd = new FileDialog(this, "Open Image", FileDialog.LOAD);
 			fd.setFilenameFilter(new FilenameFilter() {
 									public boolean accept(File dir, String name){
-										return (name.toLowerCase().endsWith(".jpg") || name.endsWith(".png"));
+										String[] imageFormats = ImageIO.getReaderFormatNames();
+								 
+										for (int i = 0; i < imageFormats.length; i++) {
+											if (name.toLowerCase().endsWith("." + imageFormats[i].toLowerCase())) {
+												return true;
+											}
+										}
+								 
+										return false;
 									}
 								 });
 			
 			fd.setVisible(true);
 			
-			if (fd.getDirectory() == null) {
+			if (fd.getDirectory() == null || fd.getFile() == null) {
 				return;
 			}
 			
@@ -180,6 +189,10 @@ public class NewLecture extends JFrame implements ActionListener {
 			if (files.length > 0) {
 				start.setEnabled(true);
 				removeImage.setEnabled(true);
+			}
+			
+			if (files.length == 6) {
+				addImage.setEnabled(false);
 			}
 		}
 		
@@ -205,10 +218,12 @@ public class NewLecture extends JFrame implements ActionListener {
 					files[index] = oldFiles[index];
 				}
 			}
-			if (model.getSize() == 0) {
+			if (files.length == 0) {
 				start.setEnabled(false);
 				removeImage.setEnabled(false);
 			}
+			
+			addImage.setEnabled(true);
 		}
 		
 		if ("cancel".equals(e.getActionCommand())) {

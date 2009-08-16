@@ -11,6 +11,9 @@ import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.Properties;
 
+import java.io.File;
+import java.io.FilenameFilter;
+
 import java.awt.*;
 import java.awt.event.*;
 
@@ -24,7 +27,6 @@ public class Gypsum extends JFrame {
 	protected ResourceBundle strings;
 	protected Properties config;
 	protected AboutBox aboutBox;
-	protected PrefPane prefs;
 	protected Configuration configurate;
 	protected NewLecture newlect;
 	protected RectangleManager rectManager;
@@ -32,6 +34,7 @@ public class Gypsum extends JFrame {
 	protected VideoMonitor vidmon;
 	private int vidmonRefCount = 0;
 	protected JFrame adjustor;
+	private File deferredLecture = null;
 	private Application fApplication = Application.getApplication();
 	protected Action newAction, openAction, closeAction, saveAction, saveAsAction, configureAction,  adjustorAction;
 	static final JMenuBar mainMenuBar = new JMenuBar();	
@@ -40,9 +43,7 @@ public class Gypsum extends JFrame {
 	public Gypsum() {
 		
 		super("");
-		// The ResourceBundle below contains all of the strings used in this
-		// application.  ResourceBundles are useful for localizing applications.
-		// New localities can be added by adding additional properties files.
+		
 		strings = ResourceBundle.getBundle ("strings", Locale.getDefault());
 		setTitle(strings.getString("frameConstructor"));
 		
@@ -65,47 +66,44 @@ public class Gypsum extends JFrame {
 		addMenus();
 		vidmon = null;
 		
-		fApplication.setEnabledPreferencesMenu(true);
-		fApplication.addApplicationListener(new com.apple.eawt.ApplicationAdapter() {
-			public void handleAbout(ApplicationEvent e) {
-                                if (aboutBox == null) {
-                                    aboutBox = new AboutBox();
-                                }
-                                about(e);
-                                e.setHandled(true);
-			}
-			public void handleOpenApplication(ApplicationEvent e) {
-			}
-			public void handleOpenFile(ApplicationEvent e) {
-			}
-			public void handlePreferences(ApplicationEvent e) {
-                                if (prefs == null) {
-                                    prefs = new PrefPane();
-                                }
-				preferences(e);
-			}
-			public void handlePrintFile(ApplicationEvent e) {
-			}
-			public void handleQuit(ApplicationEvent e) {
-				quit(e);
-			}
-		});
-		
-		if(!loadConfiguration()) {
-			// couldn't find or create the config file
+		loadConfiguration();
+		if (!config.getProperty("configured").equals("yes")) {
+			configure();
 		} else {
-			if (!config.getProperty("configured").equals("yes")) {
-				configure();
-				
-			} else {
-				newlect = new NewLecture(this);
-				newlect.setVisible(true);
-			}
+			newlect = new NewLecture(this);
+			newlect.setVisible(true);
 		}
+		
+		fApplication.setEnabledPreferencesMenu(false);
+		fApplication.addApplicationListener(new com.apple.eawt.ApplicationAdapter() {
+												public void handleAbout(ApplicationEvent e) {
+													about(e);
+													e.setHandled(true);
+												}
+												public void handleOpenApplication(ApplicationEvent e) {
+												}
+												public void handleOpenFile(ApplicationEvent e) {
+													File theFile = new File(e.getFilename());
+													openFile(new File(e.getFilename()));
+													e.setHandled(true);
+												}
+												public void handlePreferences(ApplicationEvent e) {
+												}
+												public void handlePrintFile(ApplicationEvent e) {
+												}
+												public void handleQuit(ApplicationEvent e) {
+													quit(e);
+												}
+											});
+		
 	}
 
-	// attempt to load the configuration file
-	// if it doesn't exist, create a new one
+	/*
+	 * Attempt to load the configuration file. If one does not exist,
+	 * a new one will be created. If the file can't be created, or
+	 * an IO error happens when trying to read from/write to the file,
+	 * show an error & quit.
+	 */
 	public boolean loadConfiguration() {
 		config = new Properties();
 		try {
@@ -114,7 +112,7 @@ public class Gypsum extends JFrame {
 			try {
 				config.load(configFile);
 			} catch (java.io.IOException ioe) {
-				System.out.println("There was an IO error while trying to read from the configuration file");
+				showError("An error occurred while trying to read from the configuration file.\nPlease restart Gypsum.", ioe);
 				return false;
 			}
 			
@@ -132,11 +130,11 @@ public class Gypsum extends JFrame {
 					config.store(configFile, "");
 					configFile.close();
 				} catch (java.io.IOException ioe) {
-					System.err.println("There was an IO error while trying to write to the configuration file.");
+					showError("An error ocurred while trying to write to the configuration file.\nPlease restart Gypsum", ioe);
 					return false;
 				}
 			} catch (java.io.FileNotFoundException frnf) {
-				System.err.println("There was an error while trying to create the configuration file.");
+				showError("Gypsum was unable to create the configuration file.", frnf);
 				return false;
 			}
 			
@@ -147,7 +145,8 @@ public class Gypsum extends JFrame {
 	
 	// start the configuration process
 	public void configure() {
-		
+		if (configurate != null) return;
+
 		configurate = new Configuration(this);
 		configurate.startConfiguration(config);
 		configurate.setVisible(true);
@@ -155,6 +154,13 @@ public class Gypsum extends JFrame {
 	
 	public void configurationFinished(Properties cfg) {
 		config = cfg;
+		
+		if (deferredLecture != null) {
+			openFile(deferredLecture);
+			deferredLecture = null;
+			return;
+		}
+		
 		newlect = new NewLecture(this);
 		newlect.setVisible(true);
 	}
@@ -163,32 +169,120 @@ public class Gypsum extends JFrame {
 		return config;
 	}
 	
+	
+	/*
+	 * Show the New Lecture window to select the images for a new lecture.
+	 */
+	
 	public void	newLecture() {
-		newlect = new NewLecture(this);
+		if (newlect == null) {
+			newlect = new NewLecture(this);
+		}
 		newlect.setVisible(true);
+		newlect.toFront();
 	}
+	
+	
+	/*
+	 * Start a new Lecture. This handles setting up the windows & video monitor. The 
+	 * window listener methods take care of hiding any other windows which might be open.
+	 */		
 	
 	public void startLecture(Lecture theLecture) {
 		projector = new ProjectorView(theLecture, this);
 		rectManager = new RectangleManager(projector);
-		vidmon = new VideoMonitor(640, 480, config, this, rectManager);
-		vidmon.setThresholded(true);
-		vidmon.setName("vidmon");
+		VideoMonitor vm = newVideoMonitor(640, 480, config, this, rectManager);
+		vm.setThresholded(true);
+		vm.setName("vidmon");
 		
+		fileMenu.getItem(0).setEnabled(false);
+		fileMenu.getItem(1).setEnabled(false);
 		fileMenu.getItem(3).setEnabled(true);
 		fileMenu.getItem(4).setEnabled(true);
 	
-		rectManager.setVideoMonitor(vidmon);
+		rectManager.setVideoMonitor(vm);
 	}
 	
-	private void dummyConfig() {
-		config = new Properties();
-		config.setProperty("projectorMode", "extendedR");
-		config.setProperty("perspTLx", "240"); config.setProperty("perspTLy", "160");
-		config.setProperty("perspTRx", "400"); config.setProperty("perspTRy", "160");
-		config.setProperty("perspBRx", "400"); config.setProperty("perspBRy", "320");
-		config.setProperty("perspBLx", "240"); config.setProperty("perspBLy", "320");
-		config.setProperty("perspSideLength", "160");
+	
+	/*
+	 * Display a FileDialog to open a file. This is called by the "Open..." menu item.
+	 */
+	
+	public void open() {
+		FileDialog fd = new FileDialog(this, "Open Lecture", FileDialog.LOAD);
+		fd.setFilenameFilter(new FilenameFilter() {
+								 public boolean accept(java.io.File dir, String name){
+									 return(name.endsWith(".lec"));
+								 }
+							 });
+		
+		fd.setVisible(true);
+		
+		if (fd.getDirectory() == null || fd.getFile() == null) {
+			return;
+		}
+		
+		Lecture lecture = Lecture.open(fd.getDirectory(), fd.getFile(), this);
+		startLecture(lecture);
+	}
+	
+	
+	/*
+	 * Open a File. This method is called by the Apple ApplicationListener when 
+	 * a .lec file is double-clicked, or dragged onto Gypsum's dock icon. If
+	 * configuration hasn't taken place, it defers opening the file until after
+	 * configuration is complete.
+	 */
+	
+	public void openFile(File theFile) {
+		String theName = theFile.getName();
+		String theDir = theFile.getParent() + "/";
+		
+		if (!config.getProperty("configured").equals("yes")) {
+			deferredLecture = theFile;
+			configure();
+			return;
+		}
+		
+		Lecture lecture = Lecture.open(theDir, theName, this);
+		startLecture(lecture);
+	}
+	
+	
+	/*
+	 * Pop open a file dialog to save the current lecture in a new location.
+	 */
+	
+	public void saveAs() {
+		FileDialog fd = new FileDialog(this, "Save Lecture", FileDialog.SAVE);
+		fd.setFile(projector.getLecture().name);
+		fd.setDirectory(projector.getLecture().dir);
+		fd.setVisible(true);
+		
+		String dir = fd.getDirectory();
+		String name = fd.getFile();
+		
+		projector.getLecture().save(dir, name, this);
+	}
+	
+	/*
+	 * If this lecture hasn't been saved, pop open a file dialog to specify name
+	 * and location. Otherwise, save over the existing file.
+	 */
+	
+	public void save() {
+		if (projector.getLecture().name == null) {
+			FileDialog fd = new FileDialog(this, "Save Lecture", FileDialog.SAVE);
+			fd.setFile("untitled.lec");
+			fd.setVisible(true);
+			
+			String dir = fd.getDirectory();
+			String name = fd.getFile();
+			
+			projector.getLecture().save(dir, name, this);
+		} else {
+			projector.getLecture().save(this);
+		}
 	}
 
 	public void paint(Graphics g) {
@@ -200,24 +294,30 @@ public class Gypsum extends JFrame {
 		
 		// if they just closed a lecture, pop up a new lecture window
 		if (windowClass.indexOf("ProjectorView") != -1) {
-			newLecture();
-			return;
-		}
-		
-		// if they closed the adjustor, release the video monitor
-		if (windowClass.indexOf("VideoAdjustor") != -1) {
 			releaseVideoMonitor();
+			
+			fileMenu.getItem(0).setEnabled(true);
+			fileMenu.getItem(1).setEnabled(true);
+			fileMenu.getItem(3).setEnabled(false);
+			fileMenu.getItem(4).setEnabled(false);
+			
+			newLecture();
 			return;
 		}
 		
 		// if the user is closing the configuration window, and 
 		// the app has been configured, just spawn a new lecture 
 		// window instead of quitting
-		if (windowClass.indexOf("Configuration") != -1 && 
-			!"yes".equals(config.getProperty("configured"))) {
-			e.getWindow().setVisible(false);
-			newLecture();
-			return;
+		if (windowClass.indexOf("Configuration") != -1) {
+			if ("yes".equals(config.getProperty("configured"))) {
+				e.getWindow().setVisible(false);
+				e.getWindow().dispose();
+				configurate = null;
+				newLecture();
+				return;
+			} else {
+				return;
+			}
 		}
 		
 		Object[] buttons = {"OK", "Cancel"};
@@ -243,10 +343,13 @@ public class Gypsum extends JFrame {
 	
 	public void handleOpened(WindowEvent e) {
 		String windowClass = e.getWindow().getClass().toString();
-		if (windowClass.indexOf("NewLecture") >= 0) {
+		if (windowClass.indexOf("NewLecture") != -1) {
 			if (configurate != null) configurate.setVisible(false);
 			
-		} else if (windowClass.indexOf("Configuration") >= 0) {
+		} else if (windowClass.indexOf("Configuration") != -1) {
+			if (newlect != null) newlect.setVisible(false);
+		
+		} else if (windowClass.indexOf("ProjectorView") != -1) {
 			if (newlect != null) newlect.setVisible(false);
 		}
 	}
@@ -304,12 +407,54 @@ public class Gypsum extends JFrame {
 		}
 	}
 	
+	/*
+	 * This is for fatal errors that terminate the program–right now, it's only called
+	 * if for some reason we can't create a config file. Use showWarning for recoverable
+	 * errors.
+	 */
+	public void showError(String theError, Exception e) {
+		JOptionPane.showMessageDialog(new JFrame(),
+									  theError,
+									  "Error",
+									  JOptionPane.ERROR_MESSAGE);
+		if (e != null) {
+			e.printStackTrace();
+		}
+		
+		System.exit(1);
+	}
+	
+	/*
+	 * This is for recoverable errors which do not require Gypsum to quit–for example,
+	 * errors while trying to open lecture files.
+	 */
+	public void showWarning	(String theWarning, Exception e) {
+		JOptionPane.showMessageDialog(new JFrame(),
+									  theWarning,
+									  "Error",
+									  JOptionPane.ERROR_MESSAGE);
+		if (e != null) {
+			e.printStackTrace();
+		}
+	}
+	
+	
 	public VideoMonitor newVideoMonitor(int w, int h) {
 		if (vidmon != null) {
 			return null;
 		}
 		
 		vidmon = new VideoMonitor(w, h);
+		vidmonRefCount = 1;
+		return vidmon;
+	}
+	
+	public VideoMonitor newVideoMonitor(int w, int h, Properties cfg, Gypsum app, RectangleManager mngr) {
+		if (vidmon != null) {
+			return null;
+		}
+		
+		vidmon = new VideoMonitor(w, h, cfg, app, mngr);
 		vidmonRefCount = 1;
 		return vidmon;
 	}
@@ -338,20 +483,18 @@ public class Gypsum extends JFrame {
 	// -- APPLE JAVA EXTENSION METHODS -- //
 	
 	public void about(ApplicationEvent e) {
+		if (aboutBox == null) {
+			aboutBox = new AboutBox();
+		}
 		aboutBox.setResizable(false);
 		aboutBox.setVisible(true);
-	}
-	
-	public void preferences(ApplicationEvent e) {
-		prefs.setResizable(false);
-		prefs.setVisible(true);
 	}
 	
 	public void quit(ApplicationEvent e) {	
 		System.exit(0);
 	}
 	
-	// -- ACTIONS & MENUS -- //5
+	// -- ACTIONS & MENUS -- //
 	
 	public void createActions() {
 		int shortcutKeyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
@@ -411,7 +554,7 @@ public class Gypsum extends JFrame {
 			putValue(ACCELERATOR_KEY, shortcut);
 		}
 		public void actionPerformed(ActionEvent e) {
-			System.out.println("Open...");
+			open();
 		}
 	}
 	
@@ -434,7 +577,7 @@ public class Gypsum extends JFrame {
 			putValue(ACCELERATOR_KEY, shortcut);
 		}
 		public void actionPerformed(ActionEvent e) {
-			System.out.println("Save...");
+			save();
 		}
 	}
 	
@@ -444,7 +587,7 @@ public class Gypsum extends JFrame {
 		}
 		
 		public void actionPerformed(ActionEvent e) {
-			System.out.println("Save As...");
+			saveAs();
 		}
 	}
 	

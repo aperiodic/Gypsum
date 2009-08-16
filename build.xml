@@ -85,6 +85,8 @@
 		</copy>
 		<!-- copy the icon -->
 		<copy file="${resources_macosx}/${ant.project.name}.icns" toDir="${application.resources}"/>
+		<!-- copy the lec file type icon -->
+		<copy file="${resources_macosx}/lec.icns" toDir="${application.resources}"/>
 	</target>
 
 	<!-- Install target, for building the actual product -->
