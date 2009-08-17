@@ -21,6 +21,7 @@
 	<fileset id="lib.jars" dir="${lib}">
 		<include name="**/*.jar"/>
 	</fileset>
+	
 
 	<path id="lib.path">
 		<fileset refid="lib.jars"/>
@@ -76,7 +77,10 @@
 		<copy toDir="${application.resources.java}">
 			<fileset dir="${jars}">
 				<include name="*.jar"/>
-			</fileset>			
+			</fileset>
+			<fileset id="opencvjnilib" dir="${resources_macosx}">
+				<include name="libOpenCV.jnilib"/>
+			</fileset>
 		</copy>
 		<!-- copy application stub -->
 		<copy file="${apple.appstub}" toFile="${application.macos}/${ant.project.name}"/>
