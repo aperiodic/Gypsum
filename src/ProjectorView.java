@@ -32,6 +32,7 @@ public class ProjectorView extends JFrame {
 		
 		Gypsum.fsWindowProperties fswp = app.new fsWindowProperties();
 		
+		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		addWindowListener(new WindowAdapter() {
 							public void windowClosing(WindowEvent e) {
 								app.handleClosing(e);

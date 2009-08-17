@@ -37,9 +37,9 @@ public class NewLecture extends JFrame implements ActionListener {
 		app = theApp;
 		files = new String[0];
 		
-		Font labelFont  = new Font("Lucida Grande", Font.BOLD, 14);
+		Font labelFont  = new Font("Lucida Grande", Font.PLAIN, 14);
         if (labelFont == null) {
-            labelFont = new Font("SansSerif", Font.BOLD, 14);
+            labelFont = new Font("SansSerif", Font.PLAIN, 14);
         }
 		
 		ResourceBundle strings = ResourceBundle.getBundle ("strings", Locale.getDefault());
@@ -96,7 +96,7 @@ public class NewLecture extends JFrame implements ActionListener {
 		
 		JPanel buttonsPane = new JPanel();
 		buttonsPane.setLayout(new BoxLayout(buttonsPane, BoxLayout.X_AXIS));
-		buttonsPane.add(Box.createHorizontalStrut(455));
+		buttonsPane.add(Box.createHorizontalStrut(454));
 		
 		addImage = new JButton(strings.getString("addImageButton"));
 		addImage.setActionCommand("addImages");
@@ -237,7 +237,8 @@ public class NewLecture extends JFrame implements ActionListener {
 		}
 		
 		if ("cancel".equals(e.getActionCommand())) {
-			setVisible(false);
+			WindowEvent closeWindow = new WindowEvent(this, WindowEvent.WINDOW_CLOSING);
+			Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(closeWindow);
 		}
 		
 

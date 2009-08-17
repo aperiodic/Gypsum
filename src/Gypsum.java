@@ -106,7 +106,24 @@ public class Gypsum extends JFrame {
 		
 	}
 	
+	
+	
+	// -- STARTUP-TIME METHODS (PLATFORM DETECTION, CONFIGURATION) -- //
+	/******************************************************************************/
 
+	/*
+	 *  Figure out which OS we're running on. Right now only Mac and Linux supported.
+	 */
+	private void detectPlatform() {
+		if (System.getProperty("os.name").indexOf("Mac") != -1) {
+			isMacOS = true;
+			isLinux = false;
+		} else if (System.getProperty("os.name").indexOf("Linux") != -1) {
+			isLinux = true;
+			isMacOS = false;
+		}
+	}
+	
 	/*
 	 * Attempt to load the configuration file. If one does not exist,
 	 * a new one will be created. If the file can't be created, or
@@ -156,17 +173,6 @@ public class Gypsum extends JFrame {
 		}
 	}
 	
-	private void detectPlatform() {
-		if (System.getProperty("os.name").indexOf("Mac") != -1) {
-			isMacOS = true;
-			isLinux = false;
-		} else if (System.getProperty("os.name").indexOf("Linux") != -1) {
-			isLinux = true;
-			isMacOS = false;
-		}
-	}
-	
-	// start the configuration process
 	public void configure() {
 		if (configurate != null) return;
 
@@ -194,10 +200,47 @@ public class Gypsum extends JFrame {
 	}
 	
 	
+	
+	// -- GENERAL APPLICATION EVENTS (NEW, OPEN, SAVE) -- //
+	/******************************************************************************/
+	
+	/*
+	 *  Start a new Lecture. This handles setting up the windows & video monitor. The 
+	 *  window listener methods take care of hiding any other windows which might be open.
+	 */
+	public void startLecture(Lecture theLecture) {
+		newlect.dispose();
+		newlect = null;
+		
+		projector = new ProjectorView(theLecture, this);
+		rectManager = new RectangleManager(projector);
+		VideoMonitor vm = newVideoMonitor(640, 480, config, this, rectManager);
+		vm.setThresholded(true);
+		vm.setName("vidmon");
+		
+		fileMenu.getItem(3).setEnabled(true);
+		fileMenu.getItem(4).setEnabled(true);
+	
+		rectManager.setVideoMonitor(vm);
+	}
+	
+	/*
+	 *  Stop a lecture.
+	 */
+	public void stopLecture() {
+		projector.setVisible(false);
+		projector.dispose();
+		releaseVideoMonitor();
+		projector = null;
+		rectManager = null;
+	}
+	
 	/*
 	 *  Show the New Lecture window to select the images for a new lecture.
 	 */
 	public void	newLecture() {
+		if (unsavedLecture()) return;
+		
 		if (newlect == null) {
 			newlect = new NewLecture(this);
 		}
@@ -205,31 +248,12 @@ public class Gypsum extends JFrame {
 		newlect.toFront();
 	}
 	
-	
-	/*
-	 *  Start a new Lecture. This handles setting up the windows & video monitor. The 
-	 *  window listener methods take care of hiding any other windows which might be open.
-	 */
-	public void startLecture(Lecture theLecture) {
-		projector = new ProjectorView(theLecture, this);
-		rectManager = new RectangleManager(projector);
-		VideoMonitor vm = newVideoMonitor(640, 480, config, this, rectManager);
-		vm.setThresholded(true);
-		vm.setName("vidmon");
-		
-		fileMenu.getItem(0).setEnabled(false);
-		fileMenu.getItem(1).setEnabled(false);
-		fileMenu.getItem(3).setEnabled(true);
-		fileMenu.getItem(4).setEnabled(true);
-	
-		rectManager.setVideoMonitor(vm);
-	}
-	
-	
 	/*
 	 *  Display a FileDialog to open a file. This is called by the "Open..." menu item.
 	 */
 	public void open() {
+		if(unsavedLecture()) return;
+		
 		FileDialog fd = new FileDialog(this, "Open Lecture", FileDialog.LOAD);
 		fd.setFilenameFilter(new FilenameFilter() {
 								 public boolean accept(java.io.File dir, String name){
@@ -246,7 +270,6 @@ public class Gypsum extends JFrame {
 		Lecture lecture = Lecture.open(fd.getDirectory(), fd.getFile(), this);
 		startLecture(lecture);
 	}
-	
 	
 	/*
 	 *  Open a File. This method is called by the Apple ApplicationListener when 
@@ -271,6 +294,43 @@ public class Gypsum extends JFrame {
 		startLecture(lecture);
 	}
 	
+	/*
+	 *  See if the current lecture is unsaved, and if so, give the user the option
+	 *  to save it. This is called by newLecture() and open().
+	 */
+	private boolean unsavedLecture() {
+		// see if we're currently in the middle of an unsaved lecture
+		if (projector != null && projector.getLecture().name == null) {
+			// give the user the option to save the lecture before closing
+			Object[] buttons = {"Save", "Cancel", "Don't Save"};
+			int closeResult = JOptionPane.showOptionDialog(projector,
+														   "<html><span style=\"font-weight: bold; font-size: 14pt;\">Do you want to save this lecture?</span><br><br>This lecture will be lost if you don't save now.</html>",
+														   "Save Lecture?",
+														   JOptionPane.YES_NO_CANCEL_OPTION,
+														   JOptionPane.QUESTION_MESSAGE,
+														   null,
+														   buttons,
+														   buttons[0]);
+			
+			
+			if (closeResult == JOptionPane.CANCEL_OPTION/*Don't Save*/) {
+				// note that this is if the user clicked "don't save",
+				// but JOptionPanes treat the far left button as cancel
+				// no matter what, so we're pretending it's the NO_OPTION
+				stopLecture();
+				return false;
+			} else if (closeResult == JOptionPane.NO_OPTION/*Cancel*/) {
+				// see above
+				return true;
+			} else if (closeResult == JOptionPane.YES_OPTION) {
+				save();
+				stopLecture();
+				return false;
+			}
+		}
+		
+		return false;
+	}
 	
 	/*
 	 *  Pop open a file dialog to save the current lecture in a new location.
@@ -310,15 +370,19 @@ public class Gypsum extends JFrame {
 		super.paint(g);
 	}
 	
+	
+	
+	// -- WINDOW EVENT HANDLERS -- //
+	/******************************************************************************/
+	
 	public void handleClosing(WindowEvent e) {
 		String windowClass = e.getWindow().getClass().toString();
 		
 		// if they just closed a lecture, pop up a new lecture window
 		if (windowClass.indexOf("ProjectorView") != -1) {
-			releaseVideoMonitor();
+			if (unsavedLecture()) return;
+			if (projector != null) stopLecture();
 			
-			fileMenu.getItem(0).setEnabled(true);
-			fileMenu.getItem(1).setEnabled(true);
 			fileMenu.getItem(3).setEnabled(false);
 			fileMenu.getItem(4).setEnabled(false);
 			
@@ -334,6 +398,7 @@ public class Gypsum extends JFrame {
 				e.getWindow().setVisible(false);
 				e.getWindow().dispose();
 				configurate = null;
+				releaseVideoMonitor();
 				newLecture();
 				return;
 			} else {
@@ -341,6 +406,8 @@ public class Gypsum extends JFrame {
 			}
 		}
 		
+		// the user is closing the new lecture window or the inital config window
+		// promt to quit
 		Object[] buttons = {"OK", "Cancel"};
 		int closeResult = JOptionPane.showOptionDialog(e.getWindow(),
 													   "<html><span style=\"font-weight: bold; font-size: 14pt;\">Are you sure you want to close this window?</span><br><br>This will quit Gypsum.</html>",
@@ -385,8 +452,15 @@ public class Gypsum extends JFrame {
 		theFrame.setJMenuBar(null);
 	}
 	
-	// -- APPLICATION-WIDE CONVENIENCE METHODS & CLASSES -- //
 	
+	
+	// -- APPLICATION-WIDE CONVENIENCE METHODS & CLASSES -- //
+	/******************************************************************************/
+	
+	/*
+	 *  Get the width, height, and location of a fullscreen window that covers
+	 *  the projector entirely.
+	 */
 	public class fsWindowProperties {
 		int x, y, width, height;
 		
@@ -429,7 +503,7 @@ public class Gypsum extends JFrame {
 	}
 	
 	/*
-	 *  This is for fatal errors that terminate the program–right now, it's only called
+	 *  This is for fatal errors that terminate the program. Right now, it's only called
 	 *  if for some reason we can't create a config file. Use showWarning for recoverable
 	 *  errors.
 	 */
@@ -446,7 +520,7 @@ public class Gypsum extends JFrame {
 	}
 	
 	/*
-	 *  This is for recoverable errors which do not require Gypsum to quit–for example,
+	 *  This is for recoverable errors which do not require Gypsum to quit, for example,
 	 *  errors while trying to open lecture files.
 	 */
 	public void showWarning(String theWarning, Exception e) {
@@ -458,7 +532,6 @@ public class Gypsum extends JFrame {
 			e.printStackTrace();
 		}
 	}
-	
 	
 	/*
 	 *  Get the directory to store our config file in. On OS X, this a directory in
@@ -521,7 +594,10 @@ public class Gypsum extends JFrame {
 		}
 	}
 	
-	// -- APPLE JAVA EXTENSION METHODS -- //
+	
+	
+	// -- APPLE JAVA EXTENSION HANDLERS -- //
+	/******************************************************************************/
 	
 	public void about(ApplicationEvent e) {
 		if (aboutBox == null) {
@@ -535,7 +611,10 @@ public class Gypsum extends JFrame {
 		System.exit(0);
 	}
 	
-	// -- ACTIONS & MENUS -- //
+	
+	
+	// -- MENUS & MENU ACTIONS -- //
+	/******************************************************************************/
 	
 	public void createActions() {
 		int shortcutKeyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
@@ -576,8 +655,6 @@ public class Gypsum extends JFrame {
 	public void attachMenu(JFrame aFrame) {
 		aFrame.setJMenuBar(mainMenuBar);
 	}
-	
-	// -- ABSTRACT ACTION NESTED CLASSES -- //
 	
 	public class newActionClass extends AbstractAction {
 		public newActionClass(String text, KeyStroke shortcut) {

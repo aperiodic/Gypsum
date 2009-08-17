@@ -43,7 +43,7 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 		app = _app;
 		strings = ResourceBundle.getBundle("strings", Locale.getDefault());
 		setTitle(strings.getString("configIntroTitle"));
-
+		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		
 		calPoints = new Point[4];
 		numCalPoints = 0;
