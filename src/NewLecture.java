@@ -37,6 +37,11 @@ public class NewLecture extends JFrame implements ActionListener {
 		app = theApp;
 		files = new String[0];
 		
+		Font labelFont  = new Font("Lucida Grande", Font.BOLD, 14);
+        if (labelFont == null) {
+            labelFont = new Font("SansSerif", Font.BOLD, 14);
+        }
+		
 		ResourceBundle strings = ResourceBundle.getBundle ("strings", Locale.getDefault());
 		//this.getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.Y_AXIS));
 		
@@ -49,7 +54,9 @@ public class NewLecture extends JFrame implements ActionListener {
 		contentPanel.add(Box.createVerticalStrut(20));
 		
 		JLabel imagesLabel = new JLabel(strings.getString("imagesLabel"));
+		imagesLabel.setFont(labelFont);
 		contentPanel.add(imagesLabel);
+		contentPanel.add(Box.createVerticalStrut(2));
 		
 		model = new DefaultListModel();
 		images = new JList(model);
@@ -85,9 +92,11 @@ public class NewLecture extends JFrame implements ActionListener {
 		listScroller.setAlignmentX(LEFT_ALIGNMENT);
 		
 		contentPanel.add(listScroller);
+		contentPanel.add(Box.createVerticalStrut(10));
 		
 		JPanel buttonsPane = new JPanel();
-		buttonsPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
+		buttonsPane.setLayout(new BoxLayout(buttonsPane, BoxLayout.X_AXIS));
+		buttonsPane.add(Box.createHorizontalStrut(455));
 		
 		addImage = new JButton(strings.getString("addImageButton"));
 		addImage.setActionCommand("addImages");
@@ -99,7 +108,7 @@ public class NewLecture extends JFrame implements ActionListener {
 		removeImage.addActionListener(this);
 		removeImage.setEnabled(false);
 		buttonsPane.add(removeImage);
-		buttonsPane.add(Box.createHorizontalStrut(205));
+		buttonsPane.add(Box.createHorizontalGlue());
 		
 		contentPanel.add(buttonsPane);
 		contentPanel.add(Box.createVerticalStrut(20));
@@ -143,6 +152,7 @@ public class NewLecture extends JFrame implements ActionListener {
 						  });
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		
+		setTitle(strings.getString("newLectureTitle"));
 		setSize(frameWidth, frameHeight);
 		setResizable(false);
 		setLocation(frameLeft, frameTop);
@@ -235,7 +245,7 @@ public class NewLecture extends JFrame implements ActionListener {
 			// tell the main class we have images and should
 			// start monitoring
 			setVisible(false);
-			app.startLecture(new Lecture(files));
+			app.startLecture(new Lecture(files, app));
 		}
 	}
 }

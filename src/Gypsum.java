@@ -20,6 +20,7 @@ import java.awt.event.*;
 import javax.swing.*;
 
 import com.apple.eawt.*;
+import com.apple.eio.*;
 
 public class Gypsum extends JFrame {
 
@@ -39,10 +40,13 @@ public class Gypsum extends JFrame {
 	protected Action newAction, openAction, closeAction, saveAction, saveAsAction, configureAction,  adjustorAction;
 	static final JMenuBar mainMenuBar = new JMenuBar();	
 	protected JMenu fileMenu, editMenu, windowMenu;
+	private boolean isMacOS, isLinux;
 	
 	public Gypsum() {
 		
 		super("");
+		
+		detectPlatform();
 		
 		strings = ResourceBundle.getBundle ("strings", Locale.getDefault());
 		setTitle(strings.getString("frameConstructor"));
@@ -74,8 +78,11 @@ public class Gypsum extends JFrame {
 			newlect.setVisible(true);
 		}
 		
-		fApplication.setEnabledPreferencesMenu(false);
-		fApplication.addApplicationListener(new com.apple.eawt.ApplicationAdapter() {
+		// if we're running on a mac, set the application listener to deal with the about
+		// box, and file open events from the Finder.
+		if (isMacOS) {
+			fApplication.setEnabledPreferencesMenu(false);
+			fApplication.addApplicationListener(new com.apple.eawt.ApplicationAdapter() {
 												public void handleAbout(ApplicationEvent e) {
 													about(e);
 													e.setHandled(true);
@@ -94,9 +101,11 @@ public class Gypsum extends JFrame {
 												public void handleQuit(ApplicationEvent e) {
 													quit(e);
 												}
-											});
+												});
+		}
 		
 	}
+	
 
 	/*
 	 * Attempt to load the configuration file. If one does not exist,
@@ -106,8 +115,13 @@ public class Gypsum extends JFrame {
 	 */
 	public boolean loadConfiguration() {
 		config = new Properties();
+		
+		File userDataDir = new File(getUserDataDirectory());
+		if(!userDataDir.exists()) userDataDir.mkdir();
+		String configPath = userDataDir.getPath() +  "/Gypsum.config";
+		
 		try {
-			java.io.FileInputStream configFile = new java.io.FileInputStream("Gypsum.app/Contents/Resources/Gypsum.config");
+			java.io.FileInputStream configFile = new java.io.FileInputStream(configPath);
 			
 			try {
 				config.load(configFile);
@@ -124,7 +138,7 @@ public class Gypsum extends JFrame {
 			config.setProperty("configured", "no");
 			
 			try {
-				java.io.FileOutputStream configFile = new java.io.FileOutputStream("Gypsum.app/Contents/Resources/Gypsum.config");
+				java.io.FileOutputStream configFile = new java.io.FileOutputStream(configPath);
 				
 				try {
 					config.store(configFile, "");
@@ -140,7 +154,16 @@ public class Gypsum extends JFrame {
 			
 			return true;
 		}
-		
+	}
+	
+	private void detectPlatform() {
+		if (System.getProperty("os.name").indexOf("Mac") != -1) {
+			isMacOS = true;
+			isLinux = false;
+		} else if (System.getProperty("os.name").indexOf("Linux") != -1) {
+			isLinux = true;
+			isMacOS = false;
+		}
 	}
 	
 	// start the configuration process
@@ -155,6 +178,7 @@ public class Gypsum extends JFrame {
 	public void configurationFinished(Properties cfg) {
 		config = cfg;
 		
+		// check to see if a lecture was deferred for configuration
 		if (deferredLecture != null) {
 			openFile(deferredLecture);
 			deferredLecture = null;
@@ -171,9 +195,8 @@ public class Gypsum extends JFrame {
 	
 	
 	/*
-	 * Show the New Lecture window to select the images for a new lecture.
+	 *  Show the New Lecture window to select the images for a new lecture.
 	 */
-	
 	public void	newLecture() {
 		if (newlect == null) {
 			newlect = new NewLecture(this);
@@ -184,10 +207,9 @@ public class Gypsum extends JFrame {
 	
 	
 	/*
-	 * Start a new Lecture. This handles setting up the windows & video monitor. The 
-	 * window listener methods take care of hiding any other windows which might be open.
-	 */		
-	
+	 *  Start a new Lecture. This handles setting up the windows & video monitor. The 
+	 *  window listener methods take care of hiding any other windows which might be open.
+	 */
 	public void startLecture(Lecture theLecture) {
 		projector = new ProjectorView(theLecture, this);
 		rectManager = new RectangleManager(projector);
@@ -205,9 +227,8 @@ public class Gypsum extends JFrame {
 	
 	
 	/*
-	 * Display a FileDialog to open a file. This is called by the "Open..." menu item.
+	 *  Display a FileDialog to open a file. This is called by the "Open..." menu item.
 	 */
-	
 	public void open() {
 		FileDialog fd = new FileDialog(this, "Open Lecture", FileDialog.LOAD);
 		fd.setFilenameFilter(new FilenameFilter() {
@@ -228,12 +249,11 @@ public class Gypsum extends JFrame {
 	
 	
 	/*
-	 * Open a File. This method is called by the Apple ApplicationListener when 
-	 * a .lec file is double-clicked, or dragged onto Gypsum's dock icon. If
-	 * configuration hasn't taken place, it defers opening the file until after
-	 * configuration is complete.
+	 *  Open a File. This method is called by the Apple ApplicationListener when 
+	 *  a .lec file is double-clicked, or dragged onto Gypsum's dock icon. If
+	 *  configuration hasn't taken place, it defers opening the file until after
+	 *  configuration is complete.
 	 */
-	
 	public void openFile(File theFile) {
 		String theName = theFile.getName();
 		String theDir = theFile.getParent() + "/";
@@ -245,14 +265,16 @@ public class Gypsum extends JFrame {
 		}
 		
 		Lecture lecture = Lecture.open(theDir, theName, this);
+		
+		if (newlect != null && newlect.isVisible()) newlect.setVisible(false);
+		
 		startLecture(lecture);
 	}
 	
 	
 	/*
-	 * Pop open a file dialog to save the current lecture in a new location.
+	 *  Pop open a file dialog to save the current lecture in a new location.
 	 */
-	
 	public void saveAs() {
 		FileDialog fd = new FileDialog(this, "Save Lecture", FileDialog.SAVE);
 		fd.setFile(projector.getLecture().name);
@@ -266,10 +288,9 @@ public class Gypsum extends JFrame {
 	}
 	
 	/*
-	 * If this lecture hasn't been saved, pop open a file dialog to specify name
-	 * and location. Otherwise, save over the existing file.
+	 *  If this lecture hasn't been saved, pop open a file dialog to specify name
+	 *  and location. Otherwise, save over the existing file.
 	 */
-	
 	public void save() {
 		if (projector.getLecture().name == null) {
 			FileDialog fd = new FileDialog(this, "Save Lecture", FileDialog.SAVE);
@@ -408,9 +429,9 @@ public class Gypsum extends JFrame {
 	}
 	
 	/*
-	 * This is for fatal errors that terminate the program–right now, it's only called
-	 * if for some reason we can't create a config file. Use showWarning for recoverable
-	 * errors.
+	 *  This is for fatal errors that terminate the program–right now, it's only called
+	 *  if for some reason we can't create a config file. Use showWarning for recoverable
+	 *  errors.
 	 */
 	public void showError(String theError, Exception e) {
 		JOptionPane.showMessageDialog(new JFrame(),
@@ -425,10 +446,10 @@ public class Gypsum extends JFrame {
 	}
 	
 	/*
-	 * This is for recoverable errors which do not require Gypsum to quit–for example,
-	 * errors while trying to open lecture files.
+	 *  This is for recoverable errors which do not require Gypsum to quit–for example,
+	 *  errors while trying to open lecture files.
 	 */
-	public void showWarning	(String theWarning, Exception e) {
+	public void showWarning(String theWarning, Exception e) {
 		JOptionPane.showMessageDialog(new JFrame(),
 									  theWarning,
 									  "Error",
@@ -438,6 +459,26 @@ public class Gypsum extends JFrame {
 		}
 	}
 	
+	
+	/*
+	 *  Get the directory to store our config file in. On OS X, this a directory in
+	 *  the user's application support directory. On Linux, it's ~/.config
+	 */
+	public String getUserDataDirectory() {
+		if (isMacOS) {
+			try {
+				String appSupport = FileManager.findFolder(0x61737570);
+				return appSupport + "/Gypsum/";
+			} catch (Exception e) {
+				showError("Gypsum can't find your Application Support directory.", e);
+			}
+		} else if (isLinux) {
+			return System.getProperty("user.home") + "/.config/";
+		} 
+		
+		// this should never happen, if the user is on an unsupported system, we bail
+		return null;
+	}
 	
 	public VideoMonitor newVideoMonitor(int w, int h) {
 		if (vidmon != null) {

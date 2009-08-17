@@ -208,8 +208,11 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 			
 		} else if ("finish".equals(e.getActionCommand())) {
 			config.setProperty("configured", "yes");
+			String userDataDir = app.getUserDataDirectory();
+			String configPath = userDataDir + "/Gypsum.config";
+			
 			try {
-				java.io.FileOutputStream configFile = new java.io.FileOutputStream("Gypsum.app/Contents/Resources/Gypsum.config");
+				java.io.FileOutputStream configFile = new java.io.FileOutputStream(configPath);
 				
 				try {
 					config.store(configFile, "");
@@ -219,7 +222,8 @@ public class Configuration extends JFrame implements ActionListener, ChangeListe
 				}
 				
 			} catch (java.io.FileNotFoundException fnf) {
-				app.showError("Gypsum was unable to create the configuration file.", fnf);
+				// should never happen, because if the config file couldn't be created,
+				// we would have bailed by now.
 			}
 			
 			this.setVisible(false);
