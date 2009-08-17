@@ -13,6 +13,7 @@
 	<property name="application.macos.stub" location="${application.macos}/${ant.project.name}"/>
 	<property name="application.resources" location="${dist}/${ant.project.name}.app/Contents/Resources"/>
 	<property name="application.resources.java" location="${dist}/${ant.project.name}.app/Contents/Resources/Java"/>
+	<property file="${antutil.includes}/${os.name}-${os.arch}.properties" />
 
 	<!-- lib directory should contain any pre-built jar files needed to build the project
 		 AppleJavaExtensions.jar is included to allow the built jars to run cross-platform if you depend on Apple eAWT or eIO classes.
@@ -24,9 +25,19 @@
 	<path id="lib.path">
 		<fileset refid="lib.jars"/>
 	</path>
+	
+	<!-- Figure out which OS we're building on -->
+	<target name="os-check" description="find the os family">
+		<condition property="isMac">
+			<os family="mac" />
+		</condition>
+		<condition property="isUnix">
+			<os family="unix" />
+		</condition>
+	</target>
 
 	<!-- Initialization target, for any prelimary setup needed to build -->
-	<target name="init" description="Preparation">
+	<target name="init" depends="os-check" description="Preparation">
 		<mkdir dir="${src}"/>
 		<mkdir dir="${lib}"/>
 	</target>
@@ -57,7 +68,7 @@
 		</java>
 	</target>
 	
-	<target name="package" depends="jar" description="Make a double-clickable Mac OS X application">
+	<target name="package" depends="jar" if="isMac" description="Make a double-clickable Mac OS X application">
 		<mkdir dir="${dist}"/>
 		<mkdir dir="${application.resources.java}"/>
 		<mkdir dir="${application.macos}"/>
@@ -90,10 +101,10 @@
 	</target>
 
 	<!-- Install target, for building the actual product -->
-	<target name="install" description="Create application" depends="package">
+	<target name="install" if="isMac" description="Create application" depends="package">
 	</target>
 
-    <target name="run" depends="install" description="Run the double-clickable application">
+    <target name="run" depends="install" if="isMac" description="Run the double-clickable application">
         <!-- Use the exec task to open the application -->
         <exec dir="${dist}" executable="/usr/bin/open" os="Mac OS X">
             <arg line="${ant.project.name}.app"/>
