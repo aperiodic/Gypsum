@@ -1,0 +1,67 @@
+// !$*UTF8*$!
+{
+	0A9D38F60B2A254900F7949D /* Gypsum.app */ = {
+		isa = PBXFileReference;
+		name = Gypsum.app;
+		path = dist/Gypsum.app;
+		sourceTree = "<absolute>";
+	};
+	88230FFE05D9926E00FE8D22 /* Project object */ = {
+		activeBuildConfigurationName = Release;
+		activeExecutable = 88934D45061E10E600F42905 /* Gypsum */;
+		activeTarget = 8823100505D9929B00FE8D22 /* Gypsum */;
+		addToTargets = (
+			8823100505D9929B00FE8D22 /* Gypsum */,
+		);
+		executables = (
+			88934D45061E10E600F42905 /* Gypsum */,
+		);
+	};
+	8823100505D9929B00FE8D22 /* Gypsum */ = {
+		activeExec = 0;
+	};
+	0A3CC2080B94A5DE00F6BA26 /* Gypsum.app */ = {
+		isa = PBXFileReference;
+		explicitFileType = wrapper.application;
+		name = Gypsum.app;
+		path = dist/Gypsum.app;
+		sourceTree = "<absolute>";
+	};
+	88934D45061E10E600F42905 /* Gypsum */ = {
+		isa = PBXExecutable;
+		activeArgIndex = 2147483647;
+		activeArgIndices = (
+		);
+		argumentStrings = (
+		);
+		autoAttachOnCrash = 1;
+		configStateDict = {
+			"PBXLSLaunchAction-0" = {
+				PBXLSLaunchAction = 0;
+				PBXLSLaunchStartAction = 1;
+				PBXLSLaunchStdioStyle = 2;
+				PBXLSLaunchStyle = 0;
+				class = PBXLSRunLaunchConfig;
+				displayName = "Executable Runner";
+				identifier = com.apple.Xcode.launch.runConfig;
+				remoteHostInfo = "";
+				startActionInfo = "";
+			};
+		};
+		customDataFormattersEnabled = 1;
+		debuggerPlugin = JavaDebugging;
+		disassemblyDisplayState = 0;
+		dylibVariantSuffix = "";
+		enableDebugStr = 1;
+		environmentEntries = (
+		);
+		executableSystemSymbolLevel = 0;
+		executableUserSymbolLevel = 0;
+		launchableReference = 0A3CC2080B94A5DE00F6BA26 /* Gypsum.app */;
+		libgmallocEnabled = 0;
+		name = "Gypsum";
+		sourceDirectories = (
+		);
+		startupPath = "<<ProjectDirectory>>";
+	};
+}

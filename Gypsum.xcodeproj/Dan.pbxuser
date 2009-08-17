@@ -1,0 +1,317 @@
+// !$*UTF8*$!
+{
+	0A3CC2080B94A5DE00F6BA26 /* Gypsum.app */ = {
+		isa = PBXFileReference;
+		explicitFileType = wrapper.application;
+		name = Gypsum.app;
+		path = dist/Gypsum.app;
+		sourceTree = "<absolute>";
+	};
+	372AA3120FD5D922004DE9A3 /* Source Control */ = {
+		isa = PBXSourceControlManager;
+		fallbackIsa = XCSourceControlManager;
+		isSCMEnabled = 0;
+		scmConfiguration = {
+		};
+	};
+	372AA3130FD5D922004DE9A3 /* Code sense */ = {
+		isa = PBXCodeSenseManager;
+		indexTemplatePath = "";
+	};
+	377E8C2910397FC40043A9AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 37A243401039305500173C9C /* Gypsum.java */;
+		name = "Gypsum.java: 384";
+		rLen = 0;
+		rLoc = 10959;
+		rType = 0;
+		vrLen = 1414;
+		vrLoc = 3;
+	};
+	377E8C2B103994E50043A9AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 37A243401039305500173C9C /* Gypsum.java */;
+		name = "Gypsum.java: 726";
+		rLen = 0;
+		rLoc = 20879;
+		rType = 0;
+		vrLen = 1524;
+		vrLoc = 3031;
+	};
+	377E8C341039F1570043A9AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 37A243401039305500173C9C /* Gypsum.java */;
+		name = "Gypsum.java: 726";
+		rLen = 0;
+		rLoc = 20879;
+		rType = 0;
+		vrLen = 1415;
+		vrLoc = 15493;
+	};
+	377E8C371039F1A80043A9AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 37A243401039305500173C9C /* Gypsum.java */;
+		name = "Gypsum.java: 726";
+		rLen = 0;
+		rLoc = 20879;
+		rType = 0;
+		vrLen = 1415;
+		vrLoc = 15493;
+	};
+	377E8C3C1039F2AE0043A9AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 37A243401039305500173C9C /* Gypsum.java */;
+		name = "Gypsum.java: 726";
+		rLen = 0;
+		rLoc = 20879;
+		rType = 0;
+		vrLen = 1415;
+		vrLoc = 15493;
+	};
+	377E8C401039F2FC0043A9AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 37A243401039305500173C9C /* Gypsum.java */;
+		name = "Gypsum.java: 726";
+		rLen = 0;
+		rLoc = 20879;
+		rType = 0;
+		vrLen = 1415;
+		vrLoc = 15493;
+	};
+	377E8C461039F3380043A9AC /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 37A243401039305500173C9C /* Gypsum.java */;
+		name = "Gypsum.java: 726";
+		rLen = 0;
+		rLoc = 20879;
+		rType = 0;
+		vrLen = 1415;
+		vrLoc = 15493;
+	};
+	37A243401039305500173C9C /* Gypsum.java */ = {
+		isa = PBXFileReference;
+		lastKnownFileType = sourcecode.java;
+		name = Gypsum.java;
+		path = /Users/Dan/Code/work/gsoc/Gypsum/src/Gypsum.java;
+		sourceTree = "<group>";
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {676, 10150}}";
+			sepNavSelRange = "{20879, 0}";
+			sepNavVisRange = "{15493, 1415}";
+		};
+	};
+	37A243D2103939FD00173C9C /* Gypsum.java:231 */ = {
+		isa = PBXFileBreakpoint;
+		actions = (
+		);
+		breakpointStyle = 0;
+		continueAfterActions = 0;
+		countType = 0;
+		delayBeforeContinue = 0;
+		fileReference = 37A243401039305500173C9C /* Gypsum.java */;
+		functionName = "stopLecture()";
+		hitCount = 2;
+		ignoreCount = 0;
+		lineNumber = 231;
+		modificationTime = 272188344.874352;
+		state = 1;
+	};
+	37A244A51039434B00173C9C /* Gypsum.java */ = {
+		isa = PBXFileReference;
+		lastKnownFileType = sourcecode.java;
+		name = Gypsum.java;
+		path = /Users/Dan/Code/work/gsoc/Gypsum/src/Gypsum.java;
+		sourceTree = "<group>";
+	};
+	37A244A71039434B00173C9C /* Gypsum.java:383 */ = {
+		isa = PBXFileBreakpoint;
+		actions = (
+		);
+		breakpointStyle = 0;
+		continueAfterActions = 0;
+		countType = 0;
+		delayBeforeContinue = 0;
+		fileReference = 37A244A51039434B00173C9C /* Gypsum.java */;
+		functionName = "handleClosing(WindowEvent e)";
+		hitCount = 2;
+		ignoreCount = 0;
+		lineNumber = 383;
+		modificationTime = 272188337.2459701;
+		state = 1;
+	};
+	37A244EA103945B600173C9C /* PBXBookmark */ = {
+		isa = PBXBookmark;
+		fRef = 886FEE5605D9BD280091015F /* build.xml */;
+	};
+	37A245261039567F00173C9C /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 37A244A51039434B00173C9C /* Gypsum.java */;
+		name = "Gypsum.java: 384";
+		rLen = 0;
+		rLoc = 10959;
+		rType = 0;
+		vrLen = 1653;
+		vrLoc = 12184;
+	};
+	37A245291039567F00173C9C /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 37A2452A1039567F00173C9C /* Gypsum.java */;
+		name = "Gypsum.java: 384";
+		rLen = 0;
+		rLoc = 10959;
+		rType = 0;
+		vrLen = 1653;
+		vrLoc = 12184;
+	};
+	37A2452A1039567F00173C9C /* Gypsum.java */ = {
+		isa = PBXFileReference;
+		lastKnownFileType = sourcecode.java;
+		name = Gypsum.java;
+		path = /Users/Dan/Code/work/gsoc/Gypsum/src/Gypsum.java;
+		sourceTree = "<absolute>";
+	};
+	37A2452B1039567F00173C9C /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 886FEE5605D9BD280091015F /* build.xml */;
+		name = "build.xml: 30";
+		rLen = 0;
+		rLoc = 1850;
+		rType = 0;
+		vrLen = 2499;
+		vrLoc = 0;
+	};
+	88230FFE05D9926E00FE8D22 /* Project object */ = {
+		activeBuildConfigurationName = Release;
+		activeExecutable = 88934D45061E10E600F42905 /* Gypsum */;
+		activeSDKPreference = macosx10.5;
+		activeTarget = 8823100505D9929B00FE8D22 /* Gypsum */;
+		addToTargets = (
+		);
+		breakpoints = (
+			37A243D2103939FD00173C9C /* Gypsum.java:231 */,
+			37A244A71039434B00173C9C /* Gypsum.java:383 */,
+		);
+		codeSenseManager = 372AA3130FD5D922004DE9A3 /* Code sense */;
+		executables = (
+			88934D45061E10E600F42905 /* Gypsum */,
+		);
+		perUserDictionary = {
+			"PBXConfiguration.PBXBreakpointsDataSource.v1:1CA1AED706398EBD00589147" = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
+				PBXFileTableDataSourceColumnSortingKey = PBXBreakpointsDataSource_BreakpointID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					20,
+					20,
+					198,
+					20,
+					99,
+					99,
+					29,
+					20,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXBreakpointsDataSource_ActionID,
+					PBXBreakpointsDataSource_TypeID,
+					PBXBreakpointsDataSource_BreakpointID,
+					PBXBreakpointsDataSource_UseID,
+					PBXBreakpointsDataSource_LocationID,
+					PBXBreakpointsDataSource_ConditionID,
+					PBXBreakpointsDataSource_IgnoreCountID,
+					PBXBreakpointsDataSource_ContinueID,
+				);
+			};
+			PBXConfiguration.PBXFileTableDataSource3.PBXFileTableDataSource = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
+				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					20,
+					315,
+					20,
+					48,
+					43,
+					43,
+					20,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXFileDataSource_FiletypeID,
+					PBXFileDataSource_Filename_ColumnID,
+					PBXFileDataSource_Built_ColumnID,
+					PBXFileDataSource_ObjectSize_ColumnID,
+					PBXFileDataSource_Errors_ColumnID,
+					PBXFileDataSource_Warnings_ColumnID,
+					PBXFileDataSource_Target_ColumnID,
+				);
+			};
+			PBXPerProjectTemplateStateSaveDate = 272203684;
+			PBXWorkspaceStateSaveDate = 272203684;
+		};
+		perUserProjectItems = {
+			377E8C2910397FC40043A9AC /* PBXTextBookmark */ = 377E8C2910397FC40043A9AC /* PBXTextBookmark */;
+			377E8C2B103994E50043A9AC /* PBXTextBookmark */ = 377E8C2B103994E50043A9AC /* PBXTextBookmark */;
+			377E8C341039F1570043A9AC /* PBXTextBookmark */ = 377E8C341039F1570043A9AC /* PBXTextBookmark */;
+			377E8C371039F1A80043A9AC /* PBXTextBookmark */ = 377E8C371039F1A80043A9AC /* PBXTextBookmark */;
+			377E8C3C1039F2AE0043A9AC /* PBXTextBookmark */ = 377E8C3C1039F2AE0043A9AC /* PBXTextBookmark */;
+			377E8C401039F2FC0043A9AC /* PBXTextBookmark */ = 377E8C401039F2FC0043A9AC /* PBXTextBookmark */;
+			377E8C461039F3380043A9AC /* PBXTextBookmark */ = 377E8C461039F3380043A9AC /* PBXTextBookmark */;
+			37A244EA103945B600173C9C = 37A244EA103945B600173C9C /* PBXBookmark */;
+			37A245261039567F00173C9C = 37A245261039567F00173C9C /* PBXTextBookmark */;
+			37A245291039567F00173C9C = 37A245291039567F00173C9C /* PBXTextBookmark */;
+			37A2452B1039567F00173C9C = 37A2452B1039567F00173C9C /* PBXTextBookmark */;
+		};
+		sourceControlManager = 372AA3120FD5D922004DE9A3 /* Source Control */;
+		userBuildSettings = {
+		};
+	};
+	8823100505D9929B00FE8D22 /* Gypsum */ = {
+		activeExec = 0;
+	};
+	886FEE5605D9BD280091015F /* build.xml */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {793, 1722}}";
+			sepNavSelRange = "{3484, 0}";
+			sepNavVisRange = "{2741, 1903}";
+			sepNavWindowFrame = "{{325, 51}, {852, 817}}";
+		};
+	};
+	88934D45061E10E600F42905 /* Gypsum */ = {
+		isa = PBXExecutable;
+		activeArgIndices = (
+		);
+		argumentStrings = (
+		);
+		autoAttachOnCrash = 1;
+		breakpointsEnabled = 0;
+		configStateDict = {
+			"PBXLSLaunchAction-0" = {
+				PBXLSLaunchAction = 0;
+				PBXLSLaunchStartAction = 1;
+				PBXLSLaunchStdioStyle = 3;
+				PBXLSLaunchStyle = 0;
+				class = PBXLSRunLaunchConfig;
+				commandLineArgs = (
+				);
+				displayName = "Executable Runner";
+				environment = {
+				};
+				identifier = com.apple.Xcode.launch.runConfig;
+				remoteHostInfo = "";
+				startActionInfo = "";
+			};
+		};
+		customDataFormattersEnabled = 1;
+		debuggerPlugin = JavaDebugging;
+		disassemblyDisplayState = 0;
+		dylibVariantSuffix = "";
+		enableDebugStr = 1;
+		environmentEntries = (
+		);
+		executableSystemSymbolLevel = 0;
+		executableUserSymbolLevel = 0;
+		launchableReference = 0A3CC2080B94A5DE00F6BA26 /* Gypsum.app */;
+		libgmallocEnabled = 0;
+		name = Gypsum;
+		sourceDirectories = (
+		);
+		startupPath = "<<ProjectDirectory>>";
+	};
+}
